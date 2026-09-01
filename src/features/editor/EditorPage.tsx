@@ -32,6 +32,7 @@ export function EditorPage() {
   const navigate = useNavigate()
   const canvasHandleRef = useRef<EditorCanvasHandle | null>(null)
   const editorMainRef = useRef<HTMLElement>(null)
+  const suppressNextPropertiesOpenRef = useRef(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -84,27 +85,34 @@ export function EditorPage() {
     }
   }, [layoutId, loadLayout])
 
-  // A single selection opens the mobile properties sheet as before. Closing it for a drag must
-  // not clear selection, otherwise the object would lose its active state mid-interaction.
+  // A single selection opens the mobile properties sheet as before. When the selection changes
+  // because the user started dragging from the canvas, the sheet stays closed for that gesture.
   useEffect(() => {
     if (selectedObject) {
+      if (suppressNextPropertiesOpenRef.current) {
+        suppressNextPropertiesOpenRef.current = false
+        return
+      }
       setPropertiesOpen(true)
     } else {
       setPropertiesOpen(false)
     }
   }, [selectedObject?.id])
 
-  // On mobile, if the selected object is visible on the canvas, let the first touch/press used to
-  // move it dismiss the properties sheet and continue into the canvas. This prevents the sheet
-  // from becoming a dead-end after insertion/selection while preserving the current selection.
+  // On mobile, a touch/press that starts on the canvas dismisses the properties sheet immediately
+  // and lets the same gesture continue into Konva. Selection is preserved during the drag.
   useEffect(() => {
     function handleCanvasInteraction(event: PointerEvent) {
       if (!propertiesOpen || !editorMainRef.current) return
       if (window.matchMedia('(min-width: 768px)').matches) return
-      const target = event.target as Node | null
-      if (target && editorMainRef.current.contains(target)) {
-        setPropertiesOpen(false)
-      }
+      const target = event.target as Element | null
+      if (!target || !target.closest('canvas')) return
+
+      suppressNextPropertiesOpenRef.current = true
+      setPropertiesOpen(false)
+      window.setTimeout(() => {
+        suppressNextPropertiesOpenRef.current = false
+      }, 0)
     }
 
     document.addEventListener('pointerdown', handleCanvasInteraction, true)
