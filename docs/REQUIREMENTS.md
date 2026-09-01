@@ -1,0 +1,111 @@
+# FluxoCit — Requisitos
+
+Convenção: cada requisito tem um ID (`RF` = requisito funcional, `RNF` =
+requisito não funcional), prioridade (`MVP`, `P1`, `P2`, `Futuro`) e
+status (`DEFINIDO`, `PROPOSTO`).
+
+## 1. Requisitos funcionais
+
+### 1.1 Autenticação e conta
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-01 | O usuário deve poder criar uma conta com e-mail e senha. | MVP | PROPOSTO |
+| RF-02 | O usuário deve poder autenticar-se com e-mail e senha. | MVP | PROPOSTO |
+| RF-03 | O usuário deve poder encerrar sessão (logout). | MVP | PROPOSTO |
+| RF-04 | O usuário deve poder recuperar/redefinir senha. | P1 | PROPOSTO |
+| RF-05 | O sistema deve isolar os dados de cada usuário/organização (nenhum usuário acessa layouts de outra organização sem permissão). | MVP | DEFINIDO |
+
+### 1.2 Gestão de layouts (projetos)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-10 | O usuário deve poder criar um novo layout, informando ao menos um nome. | MVP | DEFINIDO |
+| RF-11 | O usuário deve poder listar os layouts existentes. | MVP | DEFINIDO |
+| RF-12 | O usuário deve poder abrir um layout existente para edição. | MVP | DEFINIDO |
+| RF-13 | O usuário deve poder renomear um layout. | MVP | DEFINIDO |
+| RF-14 | O usuário deve poder excluir um layout. | MVP | DEFINIDO |
+| RF-15 | O usuário deve poder duplicar um layout inteiro (copiar como novo). | P1 | PROPOSTO |
+| RF-16 | O sistema deve salvar o layout automaticamente durante a edição (autosave) e/ou permitir salvar manualmente. | MVP | DEFINIDO |
+
+### 1.3 Canvas / editor 2D
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-20 | O sistema deve exibir uma grade (grid) de referência no canvas, com espaçamento correspondente a uma unidade real (ex.: 1 m). | MVP | DEFINIDO |
+| RF-21 | O usuário deve poder aplicar zoom in/out no canvas (roda do mouse, gestos de pinça no touch, botões). | MVP | DEFINIDO |
+| RF-22 | O usuário deve poder navegar (pan) pelo canvas (arrastar com botão do meio/espaço no desktop; arrastar com um dedo/dois dedos no touch). | MVP | DEFINIDO |
+| RF-23 | O usuário deve poder selecionar um objeto tocando/clicando nele. | MVP | DEFINIDO |
+| RF-24 | O usuário deve poder selecionar múltiplos objetos (retângulo de seleção e/ou shift+clique). | P1 | DEFINIDO |
+| RF-25 | O usuário deve poder mover um objeto selecionado arrastando-o. | MVP | DEFINIDO |
+| RF-26 | O usuário deve poder rotacionar um objeto selecionado (alça de rotação e/ou campo numérico de ângulo). | MVP | DEFINIDO |
+| RF-27 | O usuário deve poder duplicar um objeto selecionado. | MVP | DEFINIDO |
+| RF-28 | O usuário deve poder excluir um objeto selecionado. | MVP | DEFINIDO |
+| RF-29 | O usuário deve poder redimensionar objetos que suportam dimensão variável (ex.: paredes, áreas). | MVP | DEFINIDO |
+| RF-30 | O sistema deve oferecer snapping à grade (snap to grid) ao mover/redimensionar objetos. | MVP | DEFINIDO |
+| RF-31 | O sistema deve oferecer snapping entre objetos (bordas/centros alinhados) ao mover objetos. | P1 | DEFINIDO |
+| RF-32 | O usuário deve poder desfazer (undo) e refazer (redo) ações no editor. | MVP | DEFINIDO |
+| RF-33 | O sistema deve manter a posição/zoom da câmera do canvas coerente durante toda a sessão de edição (sem "pular" involuntariamente). | MVP | DEFINIDO |
+| RF-34 | O canvas deve suportar layouts grandes sem travar a navegação (não limitado a uma área pequena fixa). | MVP | DEFINIDO |
+
+### 1.4 Biblioteca de objetos
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-40 | O sistema deve oferecer uma biblioteca de objetos organizada por categoria (Estrutura, Armazenagem, Paletes, Equipamentos, Áreas, Fluxos, Outros). | MVP | DEFINIDO |
+| RF-41 | O usuário deve poder inserir um objeto da biblioteca no canvas (arrastar da biblioteca para o canvas, ou tocar para inserir no centro da tela visível). | MVP | DEFINIDO |
+| RF-42 | A biblioteca do MVP deve incluir, no mínimo: parede, área delimitada, porta, doca, porta-paletes, pallet, corredor, empilhadeira, paleteira. | MVP | DEFINIDO |
+| RF-43 | Cada tipo de objeto deve ter uma representação visual 2D reconhecível (não um retângulo genérico sem distinção). | MVP | DEFINIDO |
+| RF-44 | A arquitetura da biblioteca deve permitir adicionar novos tipos de objeto sem reescrever o núcleo do editor (catálogo extensível). | MVP | DEFINIDO |
+
+### 1.5 Propriedades de objetos
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-50 | Ao selecionar um objeto, o sistema deve exibir um painel de propriedades específico para aquele tipo de objeto. | MVP | DEFINIDO |
+| RF-51 | O painel de propriedades deve permitir editar posição (X, Y). | MVP | DEFINIDO |
+| RF-52 | O painel de propriedades deve permitir editar rotação (graus). | MVP | DEFINIDO |
+| RF-53 | O painel de propriedades deve permitir editar dimensões (comprimento/largura), quando aplicável ao tipo. | MVP | DEFINIDO |
+| RF-54 | O painel de propriedades deve permitir editar nome/identificação do objeto. | MVP | DEFINIDO |
+| RF-55 | O painel de propriedades não deve exibir campos irrelevantes para o tipo selecionado (ex.: pallet não mostra "número de docas"). | MVP | DEFINIDO |
+
+### 1.6 Persistência
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-60 | O sistema deve persistir todos os objetos de um layout (tipo, posição, dimensão, rotação, propriedades). | MVP | DEFINIDO |
+| RF-61 | O usuário deve poder fechar o editor e retomar exatamente de onde parou. | MVP | DEFINIDO |
+| RF-62 | A persistência inicial pode ser local (navegador) enquanto a infraestrutura de backend/nuvem não estiver disponível; a versão com conta de usuário deve sincronizar em nuvem. | MVP | PROPOSTO |
+
+### 1.7 Funcionalidades logísticas (Fase 7)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-70 | O sistema deve permitir representar fluxos de circulação (pessoas, empilhadeiras, materiais) como objetos de rota direcional na categoria Fluxos, com estilo visual distinto por tipo. | P1 | DEFINIDO |
+| RF-71 | Porta-paletes e áreas devem permitir um código de endereço/localização em texto livre. | P1 | DEFINIDO |
+| RF-72 | O sistema deve computar e exibir a capacidade de um porta-paletes (vãos × níveis) sem exigir entrada manual redundante. | P1 | DEFINIDO |
+| RF-73 | O sistema deve computar e exibir a área ocupada (m²) de um objeto do tipo "área". | P1 | DEFINIDO |
+| RF-74 | Empilhadeiras e paleteiras devem permitir um código de identificação/patrimônio, independente do nome livre do objeto. | P1 | DEFINIDO |
+| RF-75 | O sistema deve sinalizar visualmente quando dois porta-paletes/corredores se sobrepõem, sem bloquear a edição — ver `docs/BUSINESS_RULES.md` BR-60. | P1 | DEFINIDO |
+
+## 2. Requisitos não funcionais
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RNF-01 | A interface deve ser utilizável em telas de celular (mobile-first), com alvos de toque de tamanho adequado (mínimo ~40x40px). | MVP | DEFINIDO |
+| RNF-02 | A interface deve também funcionar adequadamente em desktop (mouse/teclado), sem regressão de usabilidade. | MVP | DEFINIDO |
+| RNF-03 | O canvas deve permanecer responsivo (interação fluida) com pelo menos algumas centenas de objetos em um layout. | MVP | DEFINIDO |
+| RNF-04 | O sistema não deve implementar renderização, câmera ou objetos 3D nesta fase do produto. | MVP | DEFINIDO |
+| RNF-05 | O sistema deve seguir boas práticas de segurança (sem segredos em código-fonte, autenticação/autorização adequadas, validação de entrada). | MVP | DEFINIDO |
+| RNF-06 | O código deve ser organizado em uma arquitetura extensível (novos tipos de objeto, novas áreas, novas regras) sem exigir reescrita do núcleo. | MVP | DEFINIDO |
+| RNF-07 | O sistema deve ter cobertura de testes automatizados para a lógica central do editor (estado, geometria, snapping, undo/redo). | MVP | DEFINIDO |
+| RNF-08 | O sistema deve poder ser implantado (deploy) em ambiente de produção acessível via navegador. | MVP | DEFINIDO |
+
+## 3. Fora de escopo (explícito)
+
+- Visualização e edição 3D (câmera 3D, modelos volumétricos, orbit
+  controls) — não implementar nesta fase.
+- Simulação logística complexa (fluxo de pessoas/materiais em tempo
+  real, otimização automática de layout).
+- Integrações com WMS/ERP externos.
+- Aplicativo nativo (iOS/Android) — o produto é web responsivo.
