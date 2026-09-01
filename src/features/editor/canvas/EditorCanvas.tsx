@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Rect } from 'react-konva'
 import type Konva from 'konva'
 import { Grid } from './Grid'
@@ -7,6 +7,7 @@ import { GuideLines, type SnapGuides } from './GuideLines'
 import { SelectionTransformer } from './SelectionTransformer'
 import { useEditorStore } from '../state/useEditorStore'
 import { getBoundingBox } from '../../../shared/lib/geometry'
+import { findStorageOverlaps } from '../../../shared/lib/spatialRules'
 import { pxToCm } from '../../../shared/lib/units'
 import type { ObjectTypeKey } from '../../../types/layout'
 
@@ -60,6 +61,7 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
   const scalePxPerMeter = useEditorStore((s) => s.scalePxPerMeter)
   const gridVisible = useEditorStore((s) => s.gridVisible)
   const addObject = useEditorStore((s) => s.addObject)
+  const overlappingIds = useMemo(() => findStorageOverlaps(objects), [objects])
 
   useEffect(() => {
     const el = containerRef.current
@@ -361,6 +363,7 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
                   obj={obj}
                   pxPerMeter={scalePxPerMeter}
                   selected={selectedIds.includes(obj.id)}
+                  hasOverlap={overlappingIds.has(obj.id)}
                   registerRef={(id, node) => {
                     if (node) nodesById.current.set(id, node)
                     else nodesById.current.delete(id)

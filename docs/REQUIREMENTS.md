@@ -77,6 +77,17 @@ status (`DEFINIDO`, `PROPOSTO`).
 | RF-61 | O usuário deve poder fechar o editor e retomar exatamente de onde parou. | MVP | DEFINIDO |
 | RF-62 | A persistência inicial pode ser local (navegador) enquanto a infraestrutura de backend/nuvem não estiver disponível; a versão com conta de usuário deve sincronizar em nuvem. | MVP | PROPOSTO |
 
+### 1.7 Funcionalidades logísticas (Fase 7)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-70 | O sistema deve permitir representar fluxos de circulação (pessoas, empilhadeiras, materiais) como objetos de rota direcional na categoria Fluxos, com estilo visual distinto por tipo. | P1 | DEFINIDO |
+| RF-71 | Porta-paletes e áreas devem permitir um código de endereço/localização em texto livre. | P1 | DEFINIDO |
+| RF-72 | O sistema deve computar e exibir a capacidade de um porta-paletes (vãos × níveis) sem exigir entrada manual redundante. | P1 | DEFINIDO |
+| RF-73 | O sistema deve computar e exibir a área ocupada (m²) de um objeto do tipo "área". | P1 | DEFINIDO |
+| RF-74 | Empilhadeiras e paleteiras devem permitir um código de identificação/patrimônio, independente do nome livre do objeto. | P1 | DEFINIDO |
+| RF-75 | O sistema deve sinalizar visualmente quando dois porta-paletes/corredores se sobrepõem, sem bloquear a edição — ver `docs/BUSINESS_RULES.md` BR-60. | P1 | DEFINIDO |
+
 ## 2. Requisitos não funcionais
 
 | ID | Descrição | Prioridade | Status |

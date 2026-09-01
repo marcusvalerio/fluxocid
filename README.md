@@ -55,7 +55,12 @@ npm run lint      # lint (oxlint)
       arraste, pan via espaço/botão do meio no desktop (arraste
       simples agora faz seleção por marquee), refinamento visual de
       porta-paletes e corredor, indicador undo/redo sempre visível
-- [ ] Fase 7 — Funcionalidades logísticas (áreas operacionais, fluxos, regras espaciais)
+- [x] Fase 7 — Funcionalidades logísticas: objeto de fluxo de circulação
+      (pessoas/empilhadeiras/materiais, categoria própria "Fluxos"),
+      endereçamento por código em porta-paletes e áreas, capacidade
+      computada (vãos × níveis) do porta-paletes, área ocupada (m²)
+      computada, identificação de equipamentos, sinalização visual de
+      sobreposição entre porta-paletes/corredores
 - [ ] Fase 8 — QA e validação abrangente
 - [ ] Fase 9 — Polimento final
 
@@ -64,9 +69,10 @@ autenticação, backend, banco de dados em nuvem, editor 3D, deploy
 automático. O deploy de teste é feito manualmente no Vercel pelo
 responsável do produto.
 
-## Biblioteca de objetos (MVP)
+## Biblioteca de objetos
 
 Estrutura (parede, porta, doca) · Armazenagem (porta-paletes, corredor)
 · Paletes (pallet) · Equipamentos (empilhadeira, paleteira) · Áreas
 (recebimento, expedição, picking, staging, quarentena, devolução,
-armazenagem, circulação, administrativa, personalizada).
+armazenagem, circulação, administrativa, personalizada) · Fluxos (rota
+de circulação de pessoas, empilhadeiras ou materiais).

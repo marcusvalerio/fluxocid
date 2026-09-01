@@ -17,6 +17,7 @@ export type ObjectTypeKey =
   | 'forklift'
   | 'pallet-jack'
   | 'area'
+  | 'flow-route'
 
 /** All measurements (x, y, width, length) are in centimeters. Rotation is in degrees [0, 360). */
 export interface LayoutObject {

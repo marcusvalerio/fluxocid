@@ -84,12 +84,31 @@
   usuário (ex.: "Rack A-01"); quando ausente, a interface exibe o nome
   padrão do tipo (ex.: "Porta-paletes").
 
-## 7. Regras espaciais (preparação futura, não implementadas agora)
+## 7. Regras espaciais
 
-- BR-60 (futuro): Dois objetos "sólidos" (paredes, racks, equipamentos)
-  não deveriam ocupar a mesma área física sem aviso — a arquitetura deve
-  permitir detectar sobreposição por bounding box/polígono, mas a
-  aplicação ativa dessa regra fica para fase posterior.
+- BR-60 (implementada, Fase 7 — escopo reduzido): porta-paletes e
+  corredores não deveriam ocupar a mesma área física — o sistema detecta
+  sobreposição por bounding box (considerando rotação) entre esses dois
+  tipos e sinaliza visualmente (contorno tracejado vermelho no objeto +
+  aviso no painel de propriedades), sem bloquear a ação do usuário.
+  Deliberadamente **não** aplicada a paredes/portas/docas/equipamentos:
+  docas ficam sobre paredes por definição, paredes se encontram em
+  cantos, e equipamentos são móveis — incluir essas combinações geraria
+  falsos positivos. Ver `src/shared/lib/spatialRules.ts`.
 - BR-61 (futuro): Corredores têm uma largura mínima recomendada
   associada ao tipo de equipamento que circula neles — regra a ser
-  parametrizada quando a fase de regras espaciais for implementada.
+  parametrizada quando uma fase de regras espaciais mais completa for
+  priorizada.
+
+## 8. Endereçamento e capacidade
+
+- BR-70: Porta-paletes e áreas podem ter um código de endereço/local
+  (`code`) em texto livre (ex.: `A-01-03`), sem formato imposto pelo
+  sistema — cada operação tem sua própria convenção de endereçamento.
+- BR-71: A capacidade de um porta-paletes (em posições de pallet) é
+  sempre `vãos × níveis`, computada automaticamente e somente exibida
+  (não editável diretamente) — evita a capacidade divergir da
+  configuração real do rack.
+- BR-72: A área ocupada (m²) de um objeto do tipo "área" é sempre
+  computada a partir de largura × comprimento, nunca armazenada
+  separadamente, para nunca divergir das dimensões reais do objeto.

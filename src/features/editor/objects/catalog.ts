@@ -4,6 +4,7 @@ import { Area } from './renderers/Area'
 import { Corridor } from './renderers/Corridor'
 import { Dock } from './renderers/Dock'
 import { Door } from './renderers/Door'
+import { FlowRoute } from './renderers/FlowRoute'
 import { Forklift } from './renderers/Forklift'
 import { Pallet } from './renderers/Pallet'
 import { PalletJack } from './renderers/PalletJack'
@@ -23,7 +24,29 @@ const DIMENSION_FIELDS: PropertyFieldDefinition[] = [
   { key: 'length', label: 'Comprimento', kind: 'number-m', min: 0.1, step: 0.1 },
 ]
 
+/** Free-text warehouse location code (e.g. "A-01-03") — see docs/BUSINESS_RULES.md § Endereçamento. */
+const ADDRESS_FIELD: PropertyFieldDefinition = {
+  key: 'code',
+  label: 'Endereço/Código',
+  kind: 'text',
+}
+
+/** Asset tag / equipment identification, independent of the free-text name. */
+const EQUIPMENT_CODE_FIELD: PropertyFieldDefinition = {
+  key: 'code',
+  label: 'Identificação',
+  kind: 'text',
+}
+
+const LEVEL_OPTIONS = ['1', '2', '3', '4', '5', '6'].map((v) => ({ value: v, label: v }))
+
 const AREA_TYPE_OPTIONS = Object.entries(AREA_TYPE_LABELS).map(([value, label]) => ({ value, label }))
+
+const FLOW_TYPE_OPTIONS = [
+  { value: 'people', label: 'Pessoas' },
+  { value: 'forklift', label: 'Empilhadeiras' },
+  { value: 'material', label: 'Materiais' },
+]
 
 export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
   wall: {
@@ -67,14 +90,21 @@ export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
     propertyFields: [
       ...BASE_FIELDS,
       ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      { key: 'bays', label: 'Vãos', kind: 'select', options: LEVEL_OPTIONS },
+      { key: 'levels', label: 'Níveis', kind: 'select', options: LEVEL_OPTIONS },
       {
-        key: 'bays',
-        label: 'Vãos',
-        kind: 'select',
-        options: ['1', '2', '3', '4', '5', '6'].map((v) => ({ value: v, label: v })),
+        key: 'capacity',
+        label: 'Capacidade (posições)',
+        kind: 'info',
+        compute: (obj) => {
+          const bays = Number(obj.properties.bays ?? 3)
+          const levels = Number(obj.properties.levels ?? 3)
+          return String(bays * levels)
+        },
       },
     ],
-    defaultProperties: { bays: 3 },
+    defaultProperties: { bays: 3, levels: 3 },
   },
   corridor: {
     key: 'corridor',
@@ -104,7 +134,7 @@ export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
     defaultLength: 230,
     resizable: false,
     render: Forklift,
-    propertyFields: [...BASE_FIELDS],
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD],
   },
   'pallet-jack': {
     key: 'pallet-jack',
@@ -114,7 +144,7 @@ export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
     defaultLength: 150,
     resizable: false,
     render: PalletJack,
-    propertyFields: [...BASE_FIELDS],
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD],
   },
   area: {
     key: 'area',
@@ -128,12 +158,34 @@ export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
       ...BASE_FIELDS,
       ...DIMENSION_FIELDS,
       { key: 'areaType', label: 'Tipo de área', kind: 'select', options: AREA_TYPE_OPTIONS },
+      ADDRESS_FIELD,
+      {
+        key: 'size',
+        label: 'Área',
+        kind: 'info',
+        compute: (obj) => `${((obj.width / 100) * (obj.length / 100)).toFixed(1)} m²`,
+      },
     ],
     defaultProperties: { areaType: 'storage' },
   },
+  'flow-route': {
+    key: 'flow-route',
+    category: 'flow',
+    label: 'Fluxo',
+    defaultWidth: 400,
+    defaultLength: 20,
+    resizable: true,
+    render: FlowRoute,
+    propertyFields: [
+      ...BASE_FIELDS,
+      { key: 'width', label: 'Comprimento', kind: 'number-m', min: 0.2, step: 0.1 },
+      { key: 'flowType', label: 'Tipo de fluxo', kind: 'select', options: FLOW_TYPE_OPTIONS },
+    ],
+    defaultProperties: { flowType: 'people' },
+  },
 }
 
-export const OBJECT_CATEGORIES_ORDER = ['structure', 'storage', 'pallet', 'equipment', 'area'] as const
+export const OBJECT_CATEGORIES_ORDER = ['structure', 'storage', 'pallet', 'equipment', 'area', 'flow'] as const
 
 export const CATEGORY_LABELS: Record<string, string> = {
   structure: 'Estrutura',

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -22,6 +22,7 @@ import { PropertiesPanel } from './properties-panel/PropertiesPanel'
 import { SelectionToolbar } from './properties-panel/SelectionToolbar'
 import { useEditorStore } from './state/useEditorStore'
 import { layoutRepository } from '../../shared/data/LocalLayoutRepository'
+import { findStorageOverlaps } from '../../shared/lib/spatialRules'
 import { IconButton } from '../../shared/ui/IconButton'
 import { BottomSheet } from '../../shared/ui/BottomSheet'
 import type { ObjectTypeKey } from '../../types/layout'
@@ -59,6 +60,7 @@ export function EditorPage() {
 
   const selectedObject = selectedIds.length === 1 ? objects.find((o) => o.id === selectedIds[0]) : undefined
   const hasMultiSelection = selectedIds.length > 1
+  const overlappingIds = useMemo(() => findStorageOverlaps(objects), [objects])
 
   const registerHandle = useCallback((handle: EditorCanvasHandle) => {
     canvasHandleRef.current = handle
@@ -190,7 +192,7 @@ export function EditorPage() {
 
           {selectedObject && (
             <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4">
-              <PropertiesPanel object={selectedObject} />
+              <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} />
             </aside>
           )}
 
@@ -257,7 +259,7 @@ export function EditorPage() {
             onClose={() => selectObject(null)}
             modal={false}
           >
-            <PropertiesPanel object={selectedObject} />
+            <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} />
           </BottomSheet>
         </div>
       )}

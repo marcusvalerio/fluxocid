@@ -7,7 +7,7 @@ export interface ObjectRenderProps {
   lengthPx: number
 }
 
-export type PropertyFieldKind = 'text' | 'number-m' | 'number-deg' | 'select'
+export type PropertyFieldKind = 'text' | 'number-m' | 'number-deg' | 'select' | 'info'
 
 export interface PropertyFieldOption {
   value: string
@@ -22,6 +22,8 @@ export interface PropertyFieldDefinition {
   options?: PropertyFieldOption[]
   min?: number
   step?: number
+  /** For kind 'info': a read-only value derived from the object (e.g. computed capacity), not stored as its own property. */
+  compute?: (obj: LayoutObject) => string
 }
 
 export interface ObjectTypeDefinition {

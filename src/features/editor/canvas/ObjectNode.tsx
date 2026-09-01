@@ -16,6 +16,8 @@ interface ObjectNodeProps {
   obj: LayoutObject
   pxPerMeter: number
   selected: boolean
+  /** True when this object's footprint overlaps another storage object (rack/corridor) — see spatialRules.ts. */
+  hasOverlap: boolean
   registerRef: (id: string, node: Konva.Group | null) => void
   onSnapGuideChange: (guides: SnapGuides | null) => void
   onDraggingChange: (dragging: boolean) => void
@@ -25,6 +27,7 @@ export function ObjectNode({
   obj,
   pxPerMeter,
   selected,
+  hasOverlap,
   registerRef,
   onSnapGuideChange,
   onDraggingChange,
@@ -199,6 +202,16 @@ export function ObjectNode({
       onTap={handleSelect}
     >
       <Render obj={obj} widthPx={widthPx} lengthPx={lengthPx} />
+      {hasOverlap && (
+        <Rect
+          width={widthPx}
+          height={lengthPx}
+          stroke="#DC2626"
+          strokeWidth={2.5}
+          dash={[6, 4]}
+          listening={false}
+        />
+      )}
       {selected && selectedCount > 1 && (
         <Rect width={widthPx} height={lengthPx} stroke="#2563EB" strokeWidth={2} listening={false} />
       )}
