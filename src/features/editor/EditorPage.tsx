@@ -31,7 +31,9 @@ export function EditorPage() {
   const { layoutId } = useParams<{ layoutId: string }>()
   const navigate = useNavigate()
   const canvasHandleRef = useRef<EditorCanvasHandle | null>(null)
+  const editorMainRef = useRef<HTMLElement>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const layoutName = useEditorStore((s) => s.layoutName)
@@ -81,6 +83,33 @@ export function EditorPage() {
       cancelled = true
     }
   }, [layoutId, loadLayout])
+
+  // A single selection opens the mobile properties sheet as before. Closing it for a drag must
+  // not clear selection, otherwise the object would lose its active state mid-interaction.
+  useEffect(() => {
+    if (selectedObject) {
+      setPropertiesOpen(true)
+    } else {
+      setPropertiesOpen(false)
+    }
+  }, [selectedObject?.id])
+
+  // On mobile, if the selected object is visible on the canvas, let the first touch/press used to
+  // move it dismiss the properties sheet and continue into the canvas. This prevents the sheet
+  // from becoming a dead-end after insertion/selection while preserving the current selection.
+  useEffect(() => {
+    function handleCanvasInteraction(event: PointerEvent) {
+      if (!propertiesOpen || !editorMainRef.current) return
+      if (window.matchMedia('(min-width: 768px)').matches) return
+      const target = event.target as Node | null
+      if (target && editorMainRef.current.contains(target)) {
+        setPropertiesOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handleCanvasInteraction, true)
+    return () => document.removeEventListener('pointerdown', handleCanvasInteraction, true)
+  }, [propertiesOpen])
 
   // Autosave (debounced) on every committed change (undo history entry) after the initial load —
   // not on every live-drag frame, which changes `objects` without touching history.
@@ -157,7 +186,7 @@ export function EditorPage() {
           <LibraryPanel onInsert={handleInsert} />
         </aside>
 
-        <main className="flex-1 relative">
+        <main ref={editorMainRef} className="flex-1 relative">
           <EditorCanvas registerHandle={registerHandle} />
 
           <div className="absolute top-3 left-3 flex flex-col gap-1 bg-surface border border-border rounded-lg shadow-sm p-1">
@@ -252,11 +281,14 @@ export function EditorPage() {
         </BottomSheet>
       )}
 
-      {selectedObject && (
+      {selectedObject && propertiesOpen && (
         <div className="md:hidden">
           <BottomSheet
             title={selectedObject.name || 'Propriedades'}
-            onClose={() => selectObject(null)}
+            onClose={() => {
+              setPropertiesOpen(false)
+              selectObject(null)
+            }}
             modal={false}
           >
             <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} />
