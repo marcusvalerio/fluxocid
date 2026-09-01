@@ -47,11 +47,22 @@ npm run lint      # lint (oxlint)
 - [x] Fase 5 — Núcleo do editor 2D (canvas, grid, zoom/pan, seleção,
       mover, rotacionar, duplicar, excluir, undo/redo, snapping,
       propriedades, biblioteca de objetos, persistência)
-- [ ] Fase 6 — Refinamento do editor
-- [ ] Fase 7 — Funcionalidades logísticas (áreas, fluxos, regras espaciais)
-- [ ] Fase 8 — QA
-- [ ] Fase 9 — Segurança e performance
-- [ ] Fase 10 — Deploy e documentação final
+- [x] Fase 6 — Refinamento do editor: seleção múltipla (shift-clique,
+      marquee, long-press mobile), mover/duplicar/excluir/rotacionar em
+      grupo, alinhar e distribuir, snapping entre objetos com guias
+      visuais, handles de redimensionar/rotacionar (Konva Transformer)
+      com snap de 15°, leitura de coordenadas ao vivo durante o
+      arraste, pan via espaço/botão do meio no desktop (arraste
+      simples agora faz seleção por marquee), refinamento visual de
+      porta-paletes e corredor, indicador undo/redo sempre visível
+- [ ] Fase 7 — Funcionalidades logísticas (áreas operacionais, fluxos, regras espaciais)
+- [ ] Fase 8 — QA e validação abrangente
+- [ ] Fase 9 — Polimento final
+
+Fora do escopo desta etapa (aguardando instrução): Supabase,
+autenticação, backend, banco de dados em nuvem, editor 3D, deploy
+automático. O deploy de teste é feito manualmente no Vercel pelo
+responsável do produto.
 
 ## Biblioteca de objetos (MVP)
 

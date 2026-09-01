@@ -84,4 +84,147 @@ describe('useEditorStore', () => {
     expect(useEditorStore.getState().objects).toHaveLength(0)
     expect(useEditorStore.getState().selectedIds).toEqual([])
   })
+
+  describe('multi-selection', () => {
+    it('toggles membership in the selection', () => {
+      useEditorStore.getState().addObject('pallet', 500, 500)
+      const id = useEditorStore.getState().objects[0].id
+      useEditorStore.getState().selectObject(null) // addObject auto-selects; start from empty
+
+      useEditorStore.getState().toggleSelect(id)
+      expect(useEditorStore.getState().selectedIds).toEqual([id])
+
+      useEditorStore.getState().toggleSelect(id)
+      expect(useEditorStore.getState().selectedIds).toEqual([])
+    })
+
+    it('selectMany replaces or merges the selection', () => {
+      useEditorStore.getState().addObject('pallet', 100, 100)
+      useEditorStore.getState().addObject('pallet', 300, 300)
+      const [a, b] = useEditorStore.getState().objects.map((o) => o.id)
+
+      useEditorStore.getState().selectMany([a], false)
+      expect(useEditorStore.getState().selectedIds).toEqual([a])
+
+      useEditorStore.getState().selectMany([b], true)
+      expect(new Set(useEditorStore.getState().selectedIds)).toEqual(new Set([a, b]))
+    })
+
+    it('moveManyLive updates positions without history, commitMany records one undo step', () => {
+      useEditorStore.getState().addObject('pallet', 100, 100)
+      useEditorStore.getState().addObject('pallet', 300, 300)
+      const [a, b] = useEditorStore.getState().objects.map((o) => o.id)
+      const historyBefore = useEditorStore.getState().history.past.length
+
+      useEditorStore.getState().moveManyLive([
+        { id: a, x: 1000, y: 1000 },
+        { id: b, x: 2000, y: 2000 },
+      ])
+      expect(useEditorStore.getState().history.past.length).toBe(historyBefore)
+      expect(useEditorStore.getState().objects.map((o) => o.x)).toEqual([1000, 2000])
+
+      useEditorStore.getState().commitMany([
+        { id: a, patch: { x: 1500 } },
+        { id: b, patch: { x: 2500 } },
+      ])
+      expect(useEditorStore.getState().history.past.length).toBe(historyBefore + 1)
+      expect(useEditorStore.getState().objects.map((o) => o.x)).toEqual([1500, 2500])
+
+      useEditorStore.getState().undo()
+      expect(useEditorStore.getState().objects.map((o) => o.x)).toEqual([1000, 2000])
+    })
+
+    it('deleteSelected removes every selected object as one undo step', () => {
+      useEditorStore.getState().addObject('pallet', 100, 100)
+      useEditorStore.getState().addObject('pallet', 300, 300)
+      useEditorStore.getState().addObject('pallet', 500, 500)
+      const [a, b] = useEditorStore.getState().objects.map((o) => o.id)
+
+      useEditorStore.getState().selectMany([a, b], false)
+      useEditorStore.getState().deleteSelected()
+
+      expect(useEditorStore.getState().objects).toHaveLength(1)
+      expect(useEditorStore.getState().selectedIds).toEqual([])
+
+      useEditorStore.getState().undo()
+      expect(useEditorStore.getState().objects).toHaveLength(3)
+    })
+
+    it('duplicateSelected copies every selected object with an offset', () => {
+      useEditorStore.getState().addObject('pallet', 100, 100)
+      useEditorStore.getState().addObject('pallet', 300, 300)
+      const ids = useEditorStore.getState().objects.map((o) => o.id)
+
+      useEditorStore.getState().selectMany(ids, false)
+      useEditorStore.getState().duplicateSelected()
+
+      expect(useEditorStore.getState().objects).toHaveLength(4)
+      expect(useEditorStore.getState().selectedIds).toHaveLength(2)
+    })
+  })
+
+  describe('align and distribute', () => {
+    it('aligns selected objects to the left edge of the group bounding box', () => {
+      useEditorStore.getState().addObject('pallet', 100, 100) // -> x=40
+      useEditorStore.getState().addObject('pallet', 500, 100) // -> x=440
+      const ids = useEditorStore.getState().objects.map((o) => o.id)
+
+      useEditorStore.getState().selectMany(ids, false)
+      useEditorStore.getState().alignSelected('left')
+
+      const xs = useEditorStore.getState().objects.map((o) => o.x)
+      expect(xs[0]).toBe(xs[1])
+      expect(xs[0]).toBe(40)
+    })
+
+    it('aligns selected objects to their combined horizontal center', () => {
+      useEditorStore.getState().addObject('pallet', 100, 100)
+      useEditorStore.getState().addObject('pallet', 700, 100)
+      const ids = useEditorStore.getState().objects.map((o) => o.id)
+
+      useEditorStore.getState().selectMany(ids, false)
+      useEditorStore.getState().alignSelected('centerX')
+
+      const centers = useEditorStore.getState().objects.map((o) => o.x + o.width / 2)
+      expect(centers[0]).toBeCloseTo(centers[1], 5)
+    })
+
+    it('does not align a single-object selection', () => {
+      useEditorStore.getState().addObject('pallet', 100, 100)
+      const id = useEditorStore.getState().objects[0].id
+      const xBefore = useEditorStore.getState().objects[0].x
+
+      useEditorStore.getState().selectMany([id], false)
+      useEditorStore.getState().alignSelected('left')
+
+      expect(useEditorStore.getState().objects[0].x).toBe(xBefore)
+    })
+
+    it('distributes 3+ objects with equal spacing between bounding boxes', () => {
+      useEditorStore.getState().addObject('pallet', 100, 100)
+      useEditorStore.getState().addObject('pallet', 400, 100)
+      useEditorStore.getState().addObject('pallet', 1200, 100)
+      const ids = useEditorStore.getState().objects.map((o) => o.id)
+
+      useEditorStore.getState().selectMany(ids, false)
+      useEditorStore.getState().distributeSelected('x')
+
+      const sorted = [...useEditorStore.getState().objects].sort((a, b) => a.x - b.x)
+      const gap1 = sorted[1].x - (sorted[0].x + sorted[0].width)
+      const gap2 = sorted[2].x - (sorted[1].x + sorted[1].width)
+      expect(gap1).toBeCloseTo(gap2, 5)
+    })
+
+    it('does not distribute fewer than 3 objects', () => {
+      useEditorStore.getState().addObject('pallet', 100, 100)
+      useEditorStore.getState().addObject('pallet', 400, 100)
+      const ids = useEditorStore.getState().objects.map((o) => o.id)
+      const before = useEditorStore.getState().objects.map((o) => o.x)
+
+      useEditorStore.getState().selectMany(ids, false)
+      useEditorStore.getState().distributeSelected('x')
+
+      expect(useEditorStore.getState().objects.map((o) => o.x)).toEqual(before)
+    })
+  })
 })

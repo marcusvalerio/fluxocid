@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
+  Check,
   Copy,
   Grid3x3,
   Magnet,
   Minus,
+  MousePointerClick,
   Plus,
   Redo2,
   RotateCcw,
@@ -17,6 +19,7 @@ import {
 import { EditorCanvas, type EditorCanvasHandle } from './canvas/EditorCanvas'
 import { LibraryPanel } from './library-panel/LibraryPanel'
 import { PropertiesPanel } from './properties-panel/PropertiesPanel'
+import { SelectionToolbar } from './properties-panel/SelectionToolbar'
 import { useEditorStore } from './state/useEditorStore'
 import { layoutRepository } from '../../shared/data/LocalLayoutRepository'
 import { IconButton } from '../../shared/ui/IconButton'
@@ -32,14 +35,20 @@ export function EditorPage() {
 
   const layoutName = useEditorStore((s) => s.layoutName)
   const objects = useEditorStore((s) => s.objects)
+  // Live drag updates (moveObjectLive/moveManyLive) change `objects` every frame without touching
+  // history — using history length as the autosave trigger instead means we only persist committed
+  // changes, not every in-progress drag frame (BR-41: autosave on relevant changes, not live tracking).
+  const historyVersion = useEditorStore((s) => s.history.past.length)
   const selectedIds = useEditorStore((s) => s.selectedIds)
   const selectObject = useEditorStore((s) => s.selectObject)
   const loadLayout = useEditorStore((s) => s.loadLayout)
   const undo = useEditorStore((s) => s.undo)
   const redo = useEditorStore((s) => s.redo)
-  const deleteObject = useEditorStore((s) => s.deleteObject)
-  const duplicateObject = useEditorStore((s) => s.duplicateObject)
-  const rotateObject = useEditorStore((s) => s.rotateObject)
+  const deleteSelected = useEditorStore((s) => s.deleteSelected)
+  const duplicateSelected = useEditorStore((s) => s.duplicateSelected)
+  const rotateSelected = useEditorStore((s) => s.rotateSelected)
+  const multiSelectMode = useEditorStore((s) => s.multiSelectMode)
+  const setMultiSelectMode = useEditorStore((s) => s.setMultiSelectMode)
   const snapEnabled = useEditorStore((s) => s.snapEnabled)
   const setSnapEnabled = useEditorStore((s) => s.setSnapEnabled)
   const gridVisible = useEditorStore((s) => s.gridVisible)
@@ -48,7 +57,8 @@ export function EditorPage() {
   const setSaveStatus = useEditorStore((s) => s.setSaveStatus)
   const layoutId2 = useEditorStore((s) => s.layoutId)
 
-  const selectedObject = objects.find((o) => o.id === selectedIds[0])
+  const selectedObject = selectedIds.length === 1 ? objects.find((o) => o.id === selectedIds[0]) : undefined
+  const hasMultiSelection = selectedIds.length > 1
 
   const registerHandle = useCallback((handle: EditorCanvasHandle) => {
     canvasHandleRef.current = handle
@@ -70,13 +80,14 @@ export function EditorPage() {
     }
   }, [layoutId, loadLayout])
 
-  // Autosave (debounced) whenever the object list changes after the initial load.
+  // Autosave (debounced) on every committed change (undo history entry) after the initial load —
+  // not on every live-drag frame, which changes `objects` without touching history.
   useEffect(() => {
     if (loading || !layoutId2) return
     setSaveStatus('saving')
     const timer = setTimeout(async () => {
       try {
-        await layoutRepository.saveLayoutObjects(layoutId2, objects)
+        await layoutRepository.saveLayoutObjects(layoutId2, useEditorStore.getState().objects)
         setSaveStatus('saved')
       } catch {
         setSaveStatus('error')
@@ -84,7 +95,7 @@ export function EditorPage() {
     }, 600)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [objects, layoutId2, loading])
+  }, [historyVersion, layoutId2, loading])
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -97,17 +108,19 @@ export function EditorPage() {
       } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
         e.preventDefault()
         redo()
-      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds[0]) {
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
         e.preventDefault()
-        deleteObject(selectedIds[0])
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selectedIds[0]) {
+        deleteSelected()
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selectedIds.length > 0) {
         e.preventDefault()
-        duplicateObject(selectedIds[0])
+        duplicateSelected()
+      } else if (e.key === 'Escape') {
+        selectObject(null)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [undo, redo, deleteObject, duplicateObject, selectedIds])
+  }, [undo, redo, deleteSelected, duplicateSelected, selectObject, selectedIds])
 
   function handleInsert(objectType: ObjectTypeKey) {
     canvasHandleRef.current?.insertAtCenter(objectType)
@@ -157,6 +170,15 @@ export function EditorPage() {
             </IconButton>
           </div>
 
+          <div className="absolute top-3 left-16 flex gap-1 bg-surface border border-border rounded-lg shadow-sm p-1">
+            <IconButton label="Desfazer" onClick={undo}>
+              <Undo2 size={18} />
+            </IconButton>
+            <IconButton label="Refazer" onClick={redo}>
+              <Redo2 size={18} />
+            </IconButton>
+          </div>
+
           <div className="absolute top-3 right-3 flex flex-col gap-1 bg-surface border border-border rounded-lg shadow-sm p-1">
             <IconButton label="Alternar grade" active={gridVisible} onClick={toggleGrid}>
               <Grid3x3 size={18} />
@@ -171,6 +193,26 @@ export function EditorPage() {
               <PropertiesPanel object={selectedObject} />
             </aside>
           )}
+
+          {hasMultiSelection && (
+            <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4">
+              <SelectionToolbar />
+            </aside>
+          )}
+
+          {multiSelectMode && (
+            <div className="md:hidden absolute top-14 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-primary text-white rounded-full pl-3 pr-1 py-1 shadow-sm text-sm font-medium">
+              <MousePointerClick size={16} />
+              {selectedIds.length} selecionado{selectedIds.length === 1 ? '' : 's'}
+              <button
+                onClick={() => setMultiSelectMode(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30"
+                aria-label="Concluir seleção"
+              >
+                <Check size={16} />
+              </button>
+            </div>
+          )}
         </main>
       </div>
 
@@ -184,24 +226,18 @@ export function EditorPage() {
         >
           <Plus size={22} />
         </IconButton>
-        <IconButton label="Desfazer" onClick={undo}>
-          <Undo2 size={22} />
-        </IconButton>
-        <IconButton label="Refazer" onClick={redo}>
-          <Redo2 size={22} />
-        </IconButton>
-        {selectedObject && (
+        {selectedIds.length > 0 && (
           <>
-            <IconButton label="Girar -90°" onClick={() => rotateObject(selectedObject.id, -90)}>
+            <IconButton label="Girar -90°" onClick={() => rotateSelected(-90)}>
               <RotateCcw size={22} />
             </IconButton>
-            <IconButton label="Girar +90°" onClick={() => rotateObject(selectedObject.id, 90)}>
+            <IconButton label="Girar +90°" onClick={() => rotateSelected(90)}>
               <RotateCw size={22} />
             </IconButton>
-            <IconButton label="Duplicar" onClick={() => duplicateObject(selectedObject.id)}>
+            <IconButton label="Duplicar" onClick={duplicateSelected}>
               <Copy size={22} />
             </IconButton>
-            <IconButton label="Excluir" onClick={() => deleteObject(selectedObject.id)}>
+            <IconButton label="Excluir" onClick={deleteSelected}>
               <Trash2 size={22} className="text-danger" />
             </IconButton>
           </>
@@ -222,6 +258,14 @@ export function EditorPage() {
             modal={false}
           >
             <PropertiesPanel object={selectedObject} />
+          </BottomSheet>
+        </div>
+      )}
+
+      {hasMultiSelection && (
+        <div className="md:hidden">
+          <BottomSheet title="Seleção múltipla" onClose={() => selectObject(null)} modal={false}>
+            <SelectionToolbar />
           </BottomSheet>
         </div>
       )}
