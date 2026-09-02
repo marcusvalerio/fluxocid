@@ -132,3 +132,25 @@
 - BR-72: A área ocupada (m²) de um objeto do tipo "área" é sempre
   computada a partir de largura × comprimento, nunca armazenada
   separadamente, para nunca divergir das dimensões reais do objeto.
+
+## 9. Prancheta de Fluxo
+
+- BR-80: Layout e Fluxo são duas representações do **mesmo projeto**
+  (mesmo `Layout` salvo) — nunca projetos separados. Ver
+  `src/types/flow.ts` e `Layout.flowNodes`/`Layout.flowConnections`.
+- BR-81: Um nó de fluxo não tem escala física real (não é medido em
+  metros) — sua posição no canvas de Fluxo é livre, de diagrama, e não
+  guarda nenhuma relação de coordenadas com o canvas de Layout.
+- BR-82: Excluir um nó de fluxo exclui em cascata toda conexão que o
+  referencia como origem ou destino — nunca deixa uma conexão
+  apontando para um nó inexistente.
+- BR-83: Uma conexão não pode ligar um nó a si mesmo, e não pode haver
+  duas conexões com a mesma origem e destino (evita duplicidade
+  acidental ao tentar conectar duas vezes).
+- BR-84: A associação de um nó de fluxo a uma área/objeto do Layout é
+  uma referência (`linkedObjectId` apontando para `LayoutObject.id`),
+  nunca uma cópia dos dados do objeto — evita divergência entre as
+  duas pranchetas.
+- BR-85: A Prancheta de Fluxo não tem histórico de undo/redo nesta
+  fase (diferente do Layout) — cada mutação é aplicada e persistida
+  diretamente.

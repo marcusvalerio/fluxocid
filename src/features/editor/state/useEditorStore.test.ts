@@ -227,4 +227,121 @@ describe('useEditorStore', () => {
       expect(useEditorStore.getState().objects.map((o) => o.x)).toEqual(before)
     })
   })
+
+  describe('Fluxo board', () => {
+    it('adds a flow node centered on the insertion point and selects it', () => {
+      useEditorStore.getState().addFlowNode('receiving', 500, 500)
+      const [node] = useEditorStore.getState().flowNodes
+      expect(node.type).toBe('receiving')
+      expect(useEditorStore.getState().selectedFlowNodeId).toBe(node.id)
+    })
+
+    it('cascades successive insertions so they do not perfectly overlap', () => {
+      useEditorStore.getState().addFlowNode('receiving', 500, 500)
+      useEditorStore.getState().addFlowNode('storage', 500, 500)
+      const [first, second] = useEditorStore.getState().flowNodes
+      expect(second.x).not.toBe(first.x)
+      expect(second.y).not.toBe(first.y)
+    })
+
+    it('creates a connection between two nodes with a flow type', () => {
+      useEditorStore.getState().addFlowNode('receiving', 100, 100)
+      useEditorStore.getState().addFlowNode('storage', 500, 500)
+      const [from, to] = useEditorStore.getState().flowNodes
+      useEditorStore.getState().addFlowConnection(from.id, to.id, 'material')
+      const [conn] = useEditorStore.getState().flowConnections
+      expect(conn.fromNodeId).toBe(from.id)
+      expect(conn.toNodeId).toBe(to.id)
+      expect(conn.flowType).toBe('material')
+    })
+
+    it('does not create a self-connection or a duplicate connection', () => {
+      useEditorStore.getState().addFlowNode('receiving', 100, 100)
+      const [node] = useEditorStore.getState().flowNodes
+      useEditorStore.getState().addFlowConnection(node.id, node.id, 'material')
+      expect(useEditorStore.getState().flowConnections).toHaveLength(0)
+
+      useEditorStore.getState().addFlowNode('storage', 500, 500)
+      const [from, to] = useEditorStore.getState().flowNodes
+      useEditorStore.getState().addFlowConnection(from.id, to.id, 'material')
+      useEditorStore.getState().addFlowConnection(from.id, to.id, 'pallet')
+      expect(useEditorStore.getState().flowConnections).toHaveLength(1)
+    })
+
+    it('deleting a node cascades to remove connections referencing it', () => {
+      useEditorStore.getState().addFlowNode('receiving', 100, 100)
+      useEditorStore.getState().addFlowNode('storage', 500, 500)
+      const [from, to] = useEditorStore.getState().flowNodes
+      useEditorStore.getState().addFlowConnection(from.id, to.id, 'material')
+      expect(useEditorStore.getState().flowConnections).toHaveLength(1)
+
+      useEditorStore.getState().deleteFlowNode(from.id)
+      expect(useEditorStore.getState().flowNodes).toHaveLength(1)
+      expect(useEditorStore.getState().flowConnections).toHaveLength(0)
+    })
+
+    it('duplicates a node with an offset position and selects the copy', () => {
+      useEditorStore.getState().addFlowNode('receiving', 100, 100)
+      const [original] = useEditorStore.getState().flowNodes
+      useEditorStore.getState().duplicateFlowNode(original.id)
+      const nodes = useEditorStore.getState().flowNodes
+      expect(nodes).toHaveLength(2)
+      const copy = nodes[1]
+      expect(copy.id).not.toBe(original.id)
+      expect(copy.x).toBe(original.x + 24)
+      expect(useEditorStore.getState().selectedFlowNodeId).toBe(copy.id)
+    })
+
+    it('setFlowNodeProperty updates name/notes/linkedObjectId without touching other nodes', () => {
+      useEditorStore.getState().addFlowNode('receiving', 100, 100)
+      useEditorStore.getState().addFlowNode('storage', 500, 500)
+      const [n1] = useEditorStore.getState().flowNodes
+      useEditorStore.getState().setFlowNodeProperty(n1.id, 'name', 'REC-01')
+      useEditorStore.getState().setFlowNodeProperty(n1.id, 'linkedObjectId', 'layout-obj-1')
+
+      const [updated1, updated2] = useEditorStore.getState().flowNodes
+      expect(updated1.name).toBe('REC-01')
+      expect(updated1.linkedObjectId).toBe('layout-obj-1')
+      expect(updated2.name).toBeUndefined()
+    })
+
+    it('loadLayout restores flowNodes/flowConnections from the saved layout, defaulting to empty', () => {
+      useEditorStore.getState().loadLayout({
+        ...emptyLayout(),
+        flowNodes: [{ id: 'n1', type: 'receiving', x: 0, y: 0 }],
+        flowConnections: [],
+      })
+      expect(useEditorStore.getState().flowNodes).toHaveLength(1)
+
+      useEditorStore.getState().loadLayout(emptyLayout())
+      expect(useEditorStore.getState().flowNodes).toEqual([])
+      expect(useEditorStore.getState().flowConnections).toEqual([])
+    })
+
+    it('selecting a node clears connection selection and vice versa', () => {
+      useEditorStore.getState().addFlowNode('receiving', 100, 100)
+      useEditorStore.getState().addFlowNode('storage', 500, 500)
+      const [from, to] = useEditorStore.getState().flowNodes
+      useEditorStore.getState().addFlowConnection(from.id, to.id, 'material')
+      const [conn] = useEditorStore.getState().flowConnections
+
+      useEditorStore.getState().selectFlowConnection(conn.id)
+      expect(useEditorStore.getState().selectedFlowNodeId).toBeNull()
+
+      useEditorStore.getState().selectFlowNode(from.id)
+      expect(useEditorStore.getState().selectedFlowConnectionId).toBeNull()
+    })
+
+    it('deleting a connection only removes that connection', () => {
+      useEditorStore.getState().addFlowNode('receiving', 100, 100)
+      useEditorStore.getState().addFlowNode('storage', 500, 500)
+      const [from, to] = useEditorStore.getState().flowNodes
+      useEditorStore.getState().addFlowConnection(from.id, to.id, 'material')
+      const [conn] = useEditorStore.getState().flowConnections
+
+      useEditorStore.getState().deleteFlowConnection(conn.id)
+      expect(useEditorStore.getState().flowConnections).toHaveLength(0)
+      expect(useEditorStore.getState().flowNodes).toHaveLength(2)
+    })
+  })
 })

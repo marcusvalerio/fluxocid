@@ -23,6 +23,9 @@ import { EnvironmentPanel } from './environment-panel/EnvironmentPanel'
 import { LibraryPanel } from './library-panel/LibraryPanel'
 import { PropertiesPanel } from './properties-panel/PropertiesPanel'
 import { SelectionToolbar } from './properties-panel/SelectionToolbar'
+import { FlowCanvas, type FlowCanvasHandle } from './flow/FlowCanvas'
+import { FlowLibraryPanel } from './flow/FlowLibraryPanel'
+import { FlowPropertiesPanel } from './flow/FlowPropertiesPanel'
 import { useEditorStore } from './state/useEditorStore'
 import { layoutRepository } from '../../shared/data/LocalLayoutRepository'
 import { findStorageOverlaps, getBoundsStatus } from '../../shared/lib/spatialRules'
@@ -30,11 +33,16 @@ import { IconButton } from '../../shared/ui/IconButton'
 import { ThemeToggle } from '../../shared/ui/ThemeToggle'
 import { BottomSheet } from '../../shared/ui/BottomSheet'
 import type { ObjectTypeKey } from '../../types/layout'
+import type { FlowNodeType } from '../../types/flow'
+
+type Board = 'layout' | 'flow'
 
 export function EditorPage() {
   const { layoutId } = useParams<{ layoutId: string }>()
   const navigate = useNavigate()
   const canvasHandleRef = useRef<EditorCanvasHandle | null>(null)
+  const flowCanvasHandleRef = useRef<FlowCanvasHandle | null>(null)
+  const [board, setBoard] = useState<Board>('layout')
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [environmentOpen, setEnvironmentOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -44,6 +52,7 @@ export function EditorPage() {
   // it. See docs/UX.md § 2.2 and the Fase 1 mobile touch-interception fix.
   const [propertiesCollapsed, setPropertiesCollapsed] = useState(true)
   const [canvasDragging, setCanvasDragging] = useState(false)
+  const [flowPropertiesCollapsed, setFlowPropertiesCollapsed] = useState(true)
 
   const layoutName = useEditorStore((s) => s.layoutName)
   const objects = useEditorStore((s) => s.objects)
@@ -72,6 +81,26 @@ export function EditorPage() {
   const envWidthM = useEditorStore((s) => s.envWidthM)
   const envHeightM = useEditorStore((s) => s.envHeightM)
 
+  const flowNodes = useEditorStore((s) => s.flowNodes)
+  const flowConnections = useEditorStore((s) => s.flowConnections)
+  const selectedFlowNodeId = useEditorStore((s) => s.selectedFlowNodeId)
+  const selectedFlowConnectionId = useEditorStore((s) => s.selectedFlowConnectionId)
+  const selectFlowNode = useEditorStore((s) => s.selectFlowNode)
+  const selectFlowConnection = useEditorStore((s) => s.selectFlowConnection)
+  const deleteFlowNode = useEditorStore((s) => s.deleteFlowNode)
+  const deleteFlowConnection = useEditorStore((s) => s.deleteFlowConnection)
+  const duplicateFlowNode = useEditorStore((s) => s.duplicateFlowNode)
+  const hasFlowSelection = Boolean(selectedFlowNodeId || selectedFlowConnectionId)
+
+  const registerFlowHandle = useCallback((handle: FlowCanvasHandle) => {
+    flowCanvasHandleRef.current = handle
+  }, [])
+
+  function handleFlowInsert(type: FlowNodeType) {
+    flowCanvasHandleRef.current?.insertNodeAtCenter(type)
+    setLibraryOpen(false)
+  }
+
   const selectedObject = selectedIds.length === 1 ? objects.find((o) => o.id === selectedIds[0]) : undefined
   const hasMultiSelection = selectedIds.length > 1
   const overlappingIds = useMemo(() => findStorageOverlaps(objects), [objects])
@@ -95,6 +124,13 @@ export function EditorPage() {
   useEffect(() => {
     if (canvasDragging) setPropertiesCollapsed(true)
   }, [canvasDragging])
+
+  // Same collapse-on-new-selection behavior for the Fluxo mobile sheet — a newly inserted node
+  // also lands at the viewport center, so it must not be immediately covered either.
+  const flowSelectionKey = `${selectedFlowNodeId ?? ''}:${selectedFlowConnectionId ?? ''}`
+  useEffect(() => {
+    setFlowPropertiesCollapsed(true)
+  }, [flowSelectionKey])
 
   useEffect(() => {
     let cancelled = false
@@ -129,10 +165,46 @@ export function EditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [historyVersion, layoutId2, loading])
 
+  // Fluxo autosave (debounced) — no undo history to key off (see useEditorStore.ts), so this
+  // debounces directly on the node/connection arrays; moveFlowNodeLive resets the timer on every
+  // drag frame, so a save only actually fires once the user pauses (in practice, on drag end).
+  useEffect(() => {
+    if (loading || !layoutId2) return
+    setSaveStatus('saving')
+    const timer = setTimeout(async () => {
+      try {
+        const state = useEditorStore.getState()
+        await layoutRepository.saveFlowBoard(layoutId2, state.flowNodes, state.flowConnections)
+        setSaveStatus('saved')
+      } catch {
+        setSaveStatus('error')
+      }
+    }, 600)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flowNodes, flowConnections, layoutId2, loading])
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement
       if (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA') return
+
+      if (board === 'flow') {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedFlowNodeId) {
+          e.preventDefault()
+          deleteFlowNode(selectedFlowNodeId)
+        } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedFlowConnectionId) {
+          e.preventDefault()
+          deleteFlowConnection(selectedFlowConnectionId)
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selectedFlowNodeId) {
+          e.preventDefault()
+          duplicateFlowNode(selectedFlowNodeId)
+        } else if (e.key === 'Escape') {
+          selectFlowNode(null)
+          selectFlowConnection(null)
+        }
+        return
+      }
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault()
@@ -152,7 +224,22 @@ export function EditorPage() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [undo, redo, deleteSelected, duplicateSelected, selectObject, selectedIds])
+  }, [
+    board,
+    undo,
+    redo,
+    deleteSelected,
+    duplicateSelected,
+    selectObject,
+    selectedIds,
+    selectedFlowNodeId,
+    selectedFlowConnectionId,
+    deleteFlowNode,
+    deleteFlowConnection,
+    duplicateFlowNode,
+    selectFlowNode,
+    selectFlowConnection,
+  ])
 
   function handleInsert(objectType: ObjectTypeKey) {
     canvasHandleRef.current?.insertAtCenter(objectType)
@@ -172,17 +259,36 @@ export function EditorPage() {
         <IconButton label="Voltar" onClick={() => navigate('/layouts')}>
           <ArrowLeft size={20} />
         </IconButton>
-        <h1 className="font-display text-sm md:text-base font-semibold text-text-primary truncate flex-1">
+        <h1 className="font-display text-sm md:text-base font-semibold text-text-primary truncate hidden sm:block sm:max-w-[30%]">
           {layoutName || 'Layout'}
         </h1>
+        <div className="flex items-center gap-0.5 bg-surface-alt rounded-md p-0.5 mx-auto sm:mx-0">
+          <button
+            onClick={() => setBoard('layout')}
+            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              board === 'layout' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-secondary'
+            }`}
+          >
+            Layout
+          </button>
+          <button
+            onClick={() => setBoard('flow')}
+            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              board === 'flow' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-secondary'
+            }`}
+          >
+            Fluxo
+          </button>
+        </div>
         <span
-          className={`text-xs shrink-0 transition-colors duration-200 ${saveStatus === 'error' ? 'text-danger' : 'text-text-secondary'}`}
+          className={`text-xs shrink-0 transition-colors duration-200 hidden sm:inline ${saveStatus === 'error' ? 'text-danger' : 'text-text-secondary'}`}
         >
           {saveStatusLabel[saveStatus]}
         </span>
         <ThemeToggle />
       </header>
 
+      {board === 'layout' && (
       <div className="flex-1 flex overflow-hidden relative">
         <aside className="hidden md:block w-64 border-r border-border bg-surface overflow-y-auto p-3">
           <LibraryPanel onInsert={handleInsert} />
@@ -267,7 +373,39 @@ export function EditorPage() {
           )}
         </main>
       </div>
+      )}
 
+      {board === 'flow' && (
+      <div className="flex-1 flex overflow-hidden relative">
+        <aside className="hidden md:block w-64 border-r border-border bg-surface overflow-y-auto p-3">
+          <FlowLibraryPanel onInsert={handleFlowInsert} />
+        </aside>
+
+        <main className="flex-1 relative">
+          <FlowCanvas registerHandle={registerFlowHandle} />
+
+          <div className="absolute top-3 left-3 flex flex-col gap-1 bg-surface border border-border rounded-lg shadow-sm p-1">
+            <IconButton label="Aumentar zoom" onClick={() => flowCanvasHandleRef.current?.zoomIn()}>
+              <Plus size={18} />
+            </IconButton>
+            <IconButton label="Diminuir zoom" onClick={() => flowCanvasHandleRef.current?.zoomOut()}>
+              <Minus size={18} />
+            </IconButton>
+            <IconButton label="Ajustar à tela" onClick={() => flowCanvasHandleRef.current?.fitToView()}>
+              <Maximize size={18} />
+            </IconButton>
+          </div>
+
+          {(selectedFlowNodeId || selectedFlowConnectionId) && (
+            <aside className="hidden md:block absolute top-3 right-3 w-72 bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
+              <FlowPropertiesPanel />
+            </aside>
+          )}
+        </main>
+      </div>
+      )}
+
+      {board === 'layout' && (
       <footer className="flex items-center justify-around gap-1 px-2 py-2 border-t border-border bg-surface shrink-0 md:hidden">
         <IconButton
           label="Inserir objeto"
@@ -295,14 +433,51 @@ export function EditorPage() {
           </>
         )}
       </footer>
+      )}
 
-      {libraryOpen && (
+      {board === 'flow' && (
+      <footer className="flex items-center justify-around gap-1 px-2 py-2 border-t border-border bg-surface shrink-0 md:hidden">
+        <IconButton
+          label="Inserir etapa"
+          onClick={() => {
+            selectFlowNode(null)
+            selectFlowConnection(null)
+            setLibraryOpen(true)
+          }}
+        >
+          <Plus size={22} />
+        </IconButton>
+        {selectedFlowNodeId && (
+          <>
+            <IconButton label="Duplicar" onClick={() => duplicateFlowNode(selectedFlowNodeId)}>
+              <Copy size={22} />
+            </IconButton>
+            <IconButton label="Excluir" onClick={() => deleteFlowNode(selectedFlowNodeId)}>
+              <Trash2 size={22} className="text-danger" />
+            </IconButton>
+          </>
+        )}
+        {selectedFlowConnectionId && !selectedFlowNodeId && (
+          <IconButton label="Excluir conexão" onClick={() => deleteFlowConnection(selectedFlowConnectionId)}>
+            <Trash2 size={22} className="text-danger" />
+          </IconButton>
+        )}
+      </footer>
+      )}
+
+      {board === 'layout' && libraryOpen && (
         <BottomSheet title="Biblioteca de objetos" onClose={() => setLibraryOpen(false)}>
           <LibraryPanel onInsert={handleInsert} />
         </BottomSheet>
       )}
 
-      {selectedObject && (
+      {board === 'flow' && libraryOpen && (
+        <BottomSheet title="Biblioteca de etapas" onClose={() => setLibraryOpen(false)}>
+          <FlowLibraryPanel onInsert={handleFlowInsert} />
+        </BottomSheet>
+      )}
+
+      {board === 'layout' && selectedObject && (
         <div className="md:hidden">
           <BottomSheet
             title={selectedObject.name || 'Propriedades'}
@@ -316,7 +491,7 @@ export function EditorPage() {
         </div>
       )}
 
-      {hasMultiSelection && (
+      {board === 'layout' && hasMultiSelection && (
         <div className="md:hidden">
           <BottomSheet title="Seleção múltipla" onClose={() => selectObject(null)} modal={false}>
             <SelectionToolbar />
@@ -324,10 +499,27 @@ export function EditorPage() {
         </div>
       )}
 
-      {environmentOpen && (
+      {board === 'layout' && environmentOpen && (
         <div className="md:hidden">
           <BottomSheet title="Ambiente" onClose={() => setEnvironmentOpen(false)}>
             <EnvironmentPanel />
+          </BottomSheet>
+        </div>
+      )}
+
+      {board === 'flow' && hasFlowSelection && (
+        <div className="md:hidden">
+          <BottomSheet
+            title="Propriedades"
+            onClose={() => {
+              selectFlowNode(null)
+              selectFlowConnection(null)
+            }}
+            modal={false}
+            collapsed={flowPropertiesCollapsed}
+            onToggleCollapsed={() => setFlowPropertiesCollapsed((v) => !v)}
+          >
+            <FlowPropertiesPanel />
           </BottomSheet>
         </div>
       )}

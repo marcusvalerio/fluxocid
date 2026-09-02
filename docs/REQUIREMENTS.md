@@ -112,6 +112,19 @@ status (`DEFINIDO`, `PROPOSTO`).
 | RF-82 | A biblioteca deve incluir os seguintes objetos de fluxo, cada um com representação visual própria: seta direcional, faixa de circulação, cruzamento, zona de segurança, faixa de pedestres. | P1 | DEFINIDO |
 | RF-83 | A biblioteca deve incluir um objeto de equipamento "carrinho de carga/plataforma", com representação visual própria. | P1 | DEFINIDO |
 
+### 1.9 Prancheta de Fluxo (LLP: Layout + Fluxo)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-90 | O usuário deve poder alternar entre a Prancheta de Layout e a Prancheta de Fluxo dentro do mesmo projeto, em desktop e mobile. | MVP | DEFINIDO |
+| RF-91 | O usuário deve poder criar nós de etapa de processo (Recebimento, Conferência, Armazenagem, Picking, Staging, Expedição, Devolução, Quarentena, Administrativa, Personalizada) na Prancheta de Fluxo. | MVP | DEFINIDO |
+| RF-92 | O usuário deve poder selecionar, mover, renomear, adicionar observação, duplicar e excluir um nó de fluxo. | MVP | DEFINIDO |
+| RF-93 | O usuário deve poder conectar dois nós através de uma alça de conexão, formando uma seta direcional com um tipo de fluxo (materiais, pallets, pessoas, empilhadeiras, picking). | MVP | DEFINIDO |
+| RF-94 | O usuário deve poder selecionar e excluir uma conexão, e alterar seu tipo de fluxo e identificação. | MVP | DEFINIDO |
+| RF-95 | Excluir um nó deve excluir também as conexões que o referenciam (nunca deixar uma conexão "pendurada"). | MVP | DEFINIDO |
+| RF-96 | O usuário deve poder associar um nó de fluxo a uma área/objeto já existente na Prancheta de Layout, sem duplicar os dados do objeto — apenas uma referência (`linkedObjectId`). | P1 | DEFINIDO |
+| RF-97 | Layout e Fluxo devem ser persistidos juntos, no mesmo projeto (mesmo layout salvo), e restaurados juntos ao reabrir. | MVP | DEFINIDO |
+
 ## 2. Requisitos não funcionais
 
 | ID | Descrição | Prioridade | Status |
