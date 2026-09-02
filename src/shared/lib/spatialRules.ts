@@ -123,9 +123,8 @@ const RIGID_STRUCTURE_TYPES = new Set(['wall', 'column'])
 /** Storage/structure footprints that count as "invading" a corridor if their box overlaps it. */
 const CORRIDOR_INTRUSION_CATEGORIES = new Set(['storage', 'structure', 'equipment'])
 
-/** A short, human-readable label for an object in a rule message — prefers the warehouse
- * address/code (matches how the brief's own examples reference objects, e.g. "corredor C03"),
- * then the free-text name, then a generic Portuguese label for the object type. */
+/** A generic Portuguese label per object type, used as the "type" half of a rule message
+ * subject (e.g. "Doca" in "Doca D02 está bloqueada..."). */
 const GENERIC_TYPE_LABELS: Record<string, string> = {
   rack: 'Porta-paletes',
   'drive-in': 'Drive-in',
@@ -134,23 +133,39 @@ const GENERIC_TYPE_LABELS: Record<string, string> = {
   cantilever: 'Cantilever',
   shelf: 'Estante',
   'storage-block': 'Bloco de armazenagem',
-  corridor: 'corredor',
-  wall: 'parede',
-  column: 'coluna',
-  dock: 'doca',
+  corridor: 'Corredor',
+  wall: 'Parede',
+  column: 'Coluna',
+  dock: 'Doca',
   forklift: 'Empilhadeira',
   'pallet-jack': 'Paleteira',
   'reach-truck': 'Reach truck',
   tug: 'Rebocador',
   'order-picker': 'Order picker',
   'platform-cart': 'Carrinho de carga',
+  area: 'Área',
+  'area-picking': 'Área de picking',
+  'area-staging': 'Área de staging',
+  'area-inspection': 'Área de conferência',
+  'area-shipping': 'Área de expedição',
+  'area-receiving': 'Área de recebimento',
 }
 
-function labelFor(o: LayoutObject): string {
+/** The object's warehouse address/code if set, else its free-text name, else empty. */
+function addressSuffix(o: LayoutObject): string {
   const code = o.properties.code
   if (typeof code === 'string' && code.trim()) return code.trim()
   if (o.name?.trim()) return o.name.trim()
-  return GENERIC_TYPE_LABELS[o.objectType] ?? o.objectType
+  return ''
+}
+
+/** A short, human-readable label for an object in a rule message — "Tipo Código" when an
+ * address/name is set (e.g. "Doca D02", matching the brief's own examples), or just the generic
+ * type label otherwise (e.g. "Doca"). */
+function labelFor(o: LayoutObject): string {
+  const typeLabel = GENERIC_TYPE_LABELS[o.objectType] ?? o.objectType
+  const addr = addressSuffix(o)
+  return addr ? `${typeLabel} ${addr}` : typeLabel
 }
 
 function overlapAreaCm2(a: LayoutObject, b: LayoutObject): number {
@@ -219,6 +234,7 @@ export function findBlockedCorridors(objects: LayoutObject[]): SpatialViolation[
   )
   const violations: SpatialViolation[] = []
   for (const corridor of corridors) {
+    const corridorAddr = addressSuffix(corridor)
     for (const intruder of intruders) {
       if (overlapAreaCm2(corridor, intruder) <= 0) continue
       violations.push({
@@ -226,7 +242,7 @@ export function findBlockedCorridors(objects: LayoutObject[]): SpatialViolation[
         code: 'corridor-blocked',
         severity: 'critical',
         objectIds: [corridor.id, intruder.id],
-        message: `${labelFor(intruder)} invade o corredor ${labelFor(corridor)}.`,
+        message: `${labelFor(intruder)} invade o corredor${corridorAddr ? ' ' + corridorAddr : ''}.`,
       })
     }
   }
@@ -242,12 +258,13 @@ export function findNarrowCorridors(objects: LayoutObject[]): SpatialViolation[]
     const widthCm = Math.min(o.width, o.length)
     const recommendedCm = getRecommendedCorridorWidthCm(o.properties.corridorType)
     if (widthCm >= recommendedCm) continue
+    const corridorAddr = addressSuffix(o)
     violations.push({
       id: `corridor-narrow:${o.id}`,
       code: 'corridor-narrow',
       severity: 'warning',
       objectIds: [o.id],
-      message: `Largura do corredor ${labelFor(o)} está abaixo da recomendação (${Math.round(widthCm)} cm, mínimo sugerido ${recommendedCm} cm).`,
+      message: `Largura do corredor${corridorAddr ? ' ' + corridorAddr : ''} está abaixo da recomendação (${Math.round(widthCm)} cm, mínimo sugerido ${recommendedCm} cm).`,
     })
   }
   return violations
@@ -289,7 +306,7 @@ export function findOverlappingOperationalAreas(objects: LayoutObject[]): Spatia
         code: 'area-overlap',
         severity: 'warning',
         objectIds: [a.id, b.id],
-        message: `Área ${labelFor(a)} sobrepõe a área ${labelFor(b)}.`,
+        message: `${labelFor(a)} sobrepõe ${labelFor(b)}.`,
       })
     }
   }
