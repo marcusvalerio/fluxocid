@@ -17,6 +17,7 @@ import {
   Undo2,
   Maximize,
   Warehouse,
+  X,
 } from 'lucide-react'
 import { EditorCanvas, type EditorCanvasHandle } from './canvas/EditorCanvas'
 import { EnvironmentPanel } from './environment-panel/EnvironmentPanel'
@@ -44,6 +45,9 @@ export function EditorPage() {
   // it. See docs/UX.md § 2.2 and the Fase 1 mobile touch-interception fix.
   const [propertiesCollapsed, setPropertiesCollapsed] = useState(true)
   const [canvasDragging, setCanvasDragging] = useState(false)
+  // Desktop properties panel is dismissible so it never blocks the canvas while editing.
+  // A new selection opens it; closing it keeps it closed until another object is selected.
+  const [propertiesOpen, setPropertiesOpen] = useState(true)
 
   const layoutName = useEditorStore((s) => s.layoutName)
   const objects = useEditorStore((s) => s.objects)
@@ -87,13 +91,18 @@ export function EditorPage() {
   const selectedIdsKey = selectedIds.join(',')
   useEffect(() => {
     setPropertiesCollapsed(true)
+    if (selectedIds.length === 1) setPropertiesOpen(true)
+    if (selectedIds.length === 0) setPropertiesOpen(false)
   }, [selectedIdsKey])
 
   // A drag starting while the sheet happens to be expanded (the user opened it, then decided
   // to drag the object) latches it collapsed — so it doesn't pop back open the instant the
   // drag ends. It only comes back via an explicit tap (onToggleCollapsed).
   useEffect(() => {
-    if (canvasDragging) setPropertiesCollapsed(true)
+    if (canvasDragging) {
+      setPropertiesCollapsed(true)
+      setPropertiesOpen(false)
+    }
   }, [canvasDragging])
 
   useEffect(() => {
@@ -240,14 +249,26 @@ export function EditorPage() {
             </aside>
           )}
 
-          {selectedObject && (
+          {selectedObject && propertiesOpen && (
             <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-heading text-base font-semibold text-text-primary">Propriedades</h2>
+                <IconButton label="Fechar propriedades" onClick={() => setPropertiesOpen(false)}>
+                  <X size={18} />
+                </IconButton>
+              </div>
               <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} boundsStatus={selectedBoundsStatus} />
             </aside>
           )}
 
           {hasMultiSelection && (
             <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-heading text-base font-semibold text-text-primary">Seleção</h2>
+                <IconButton label="Fechar seleção" onClick={() => selectObject(null)}>
+                  <X size={18} />
+                </IconButton>
+              </div>
               <SelectionToolbar />
             </aside>
           )}
