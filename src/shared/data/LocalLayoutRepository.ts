@@ -1,5 +1,6 @@
 import { createId } from '../lib/id'
 import type { Layout, LayoutObject, LayoutSummary, NewLayoutInput } from '../../types/layout'
+import type { FlowConnection, FlowNode } from '../../types/flow'
 import type { LayoutRepository } from './LayoutRepository'
 
 const STORAGE_KEY = 'fluxocit:layouts'
@@ -83,6 +84,16 @@ export class LocalLayoutRepository implements LayoutRepository {
     const layout = layouts.find((l) => l.id === id)
     if (!layout) return
     Object.assign(layout, settings)
+    layout.updatedAt = new Date().toISOString()
+    writeAll(layouts)
+  }
+
+  async saveFlowBoard(id: string, flowNodes: FlowNode[], flowConnections: FlowConnection[]): Promise<void> {
+    const layouts = readAll()
+    const layout = layouts.find((l) => l.id === id)
+    if (!layout) return
+    layout.flowNodes = flowNodes
+    layout.flowConnections = flowConnections
     layout.updatedAt = new Date().toISOString()
     writeAll(layouts)
   }

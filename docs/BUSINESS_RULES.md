@@ -119,6 +119,14 @@
   associada ao tipo de equipamento que circula neles — regra a ser
   parametrizada quando uma fase de regras espaciais mais completa for
   priorizada.
+- BR-62 (P8, preparação): Empilhadeira, paleteira e carrinho de
+  carga/plataforma carregam capacidade (kg), raio de giro (m) e
+  largura mínima de corredor (m) como propriedades informativas
+  (`properties.capacityKg`/`turningRadiusM`/`minAisleWidthM`) — nenhuma
+  validação automática as usa ainda (ex.: bloquear equipamento em
+  corredor estreito demais); existem para não exigir migração de dados
+  quando essa validação for priorizada. Ver `EQUIPMENT_SPEC_FIELDS` em
+  `src/features/editor/objects/catalog.ts`.
 
 ## 8. Endereçamento e capacidade
 
@@ -132,3 +140,31 @@
 - BR-72: A área ocupada (m²) de um objeto do tipo "área" é sempre
   computada a partir de largura × comprimento, nunca armazenada
   separadamente, para nunca divergir das dimensões reais do objeto.
+
+## 9. Prancheta de Fluxo
+
+- BR-80: Layout e Fluxo são duas representações do **mesmo projeto**
+  (mesmo `Layout` salvo) — nunca projetos separados. Ver
+  `src/types/flow.ts` e `Layout.flowNodes`/`Layout.flowConnections`.
+- BR-81: Um nó de fluxo não tem escala física real (não é medido em
+  metros) — sua posição no canvas de Fluxo é livre, de diagrama, e não
+  guarda nenhuma relação de coordenadas com o canvas de Layout.
+- BR-82: Excluir um nó de fluxo exclui em cascata toda conexão que o
+  referencia como origem ou destino — nunca deixa uma conexão
+  apontando para um nó inexistente.
+- BR-83: Uma conexão não pode ligar um nó a si mesmo, e não pode haver
+  duas conexões com a mesma origem e destino (evita duplicidade
+  acidental ao tentar conectar duas vezes).
+- BR-84: A associação de um nó de fluxo a uma área/objeto do Layout é
+  uma referência (`linkedObjectId` apontando para `LayoutObject.id`),
+  nunca uma cópia dos dados do objeto — evita divergência entre as
+  duas pranchetas.
+- BR-85: A Prancheta de Fluxo não tem histórico de undo/redo nesta
+  fase (diferente do Layout) — cada mutação é aplicada e persistida
+  diretamente.
+- BR-86: A sobreposição do fluxo no Layout (toggle "Mostrar fluxo
+  sobre o layout") só desenha uma conexão quando **ambos** os nós
+  extremos estão associados a um objeto do Layout existente —
+  conexões sem associação completa não aparecem no Layout (apenas na
+  própria Prancheta de Fluxo). É somente leitura: não é selecionável
+  nem editável a partir do Layout. Ver `src/features/editor/canvas/FlowOverlay.tsx`.

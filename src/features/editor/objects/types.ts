@@ -7,7 +7,7 @@ export interface ObjectRenderProps {
   lengthPx: number
 }
 
-export type PropertyFieldKind = 'text' | 'number-m' | 'number-deg' | 'select' | 'info'
+export type PropertyFieldKind = 'text' | 'number-m' | 'number-deg' | 'number-plain' | 'select' | 'info'
 
 export interface PropertyFieldOption {
   value: string
@@ -24,6 +24,10 @@ export interface PropertyFieldDefinition {
   step?: number
   /** For kind 'info': a read-only value derived from the object (e.g. computed capacity), not stored as its own property. */
   compute?: (obj: LayoutObject) => string
+  /** For kind 'number-plain': unit suffix shown next to the value (e.g. "kg", "m") — stored in
+   * `properties` as-is (no cm/m conversion, unlike 'number-m'), since these describe equipment
+   * specs rather than canvas geometry. See docs/BUSINESS_RULES.md § Regras espaciais (P8). */
+  unit?: string
 }
 
 export interface ObjectTypeDefinition {

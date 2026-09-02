@@ -1,4 +1,5 @@
 import type { Layout, LayoutObject, LayoutSummary, NewLayoutInput } from '../../types/layout'
+import type { FlowConnection, FlowNode } from '../../types/flow'
 
 /**
  * Persistence abstraction consumed by features/layouts and features/editor.
@@ -14,4 +15,7 @@ export interface LayoutRepository {
   saveLayoutObjects(id: string, objects: LayoutObject[]): Promise<void>
   /** Updates layout-level settings (environment size, scale, grid step) — not the object list. */
   updateLayoutSettings(id: string, settings: Partial<Pick<Layout, 'widthM' | 'heightM'>>): Promise<void>
+  /** Persists the Fluxo board (nodes + connections) — same project as `objects`, saved
+   * independently so editing one board never touches the other's data. */
+  saveFlowBoard(id: string, flowNodes: FlowNode[], flowConnections: FlowConnection[]): Promise<void>
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Rect } from 'react-konva'
 import type Konva from 'konva'
 import { Environment } from './Environment'
+import { FlowOverlay } from './FlowOverlay'
 import { Grid } from './Grid'
 import { ObjectNode } from './ObjectNode'
 import { ObjectRenderStatic } from './ObjectRenderStatic'
@@ -12,11 +13,17 @@ import { useEditorStore, type Camera } from '../state/useEditorStore'
 import { getBoundingBox } from '../../../shared/lib/geometry'
 import { findStorageOverlaps, getBoundsStatus } from '../../../shared/lib/spatialRules'
 import { cmToPx, pxToCm } from '../../../shared/lib/units'
+import { useIsDarkMode } from '../../../shared/lib/useIsDarkMode'
 import type { ObjectTypeKey } from '../../../types/layout'
 
 const MIN_ZOOM = 0.2
 const MAX_ZOOM = 4
 const MARQUEE_MIN_PX = 4
+const EXPORT_PADDING_PX = 24
+/** Matches --color-surface-alt in both themes — the "outside the environment" tone, so the
+ * export's background reads the same as the live canvas instead of defaulting to transparent. */
+const EXPORT_BG_LIGHT = '#e3e6eb'
+const EXPORT_BG_DARK = '#1b1d24'
 
 function getDistance(p1: { x: number; y: number }, p2: { x: number; y: number }) {
   return Math.hypot(p1.x - p2.x, p1.y - p2.y)
@@ -70,6 +77,9 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
   const setCamera = useEditorStore((s) => s.setCamera)
   const scalePxPerMeter = useEditorStore((s) => s.scalePxPerMeter)
   const gridVisible = useEditorStore((s) => s.gridVisible)
+  const flowOverlayVisible = useEditorStore((s) => s.flowOverlayVisible)
+  const flowNodes = useEditorStore((s) => s.flowNodes)
+  const flowConnections = useEditorStore((s) => s.flowConnections)
   const addObject = useEditorStore((s) => s.addObject)
   const envWidthM = useEditorStore((s) => s.envWidthM)
   const envHeightM = useEditorStore((s) => s.envHeightM)
@@ -83,6 +93,31 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
     for (const o of objects) map.set(o.id, getBoundsStatus(o, envWidthCm, envHeightCm))
     return map
   }, [objects, envWidthM, envHeightM])
+  const isDarkMode = useIsDarkMode()
+
+  // The exported PNG must never crop an object that's (legitimately, per BR-02b) placed partly
+  // or fully outside the environment — so the export canvas is the union of the environment
+  // rect and every object's bounding box, not just the environment. Objects fully inside the
+  // common case never change this from the plain envWidthPx x envHeightPx rectangle.
+  const exportBoundsPx = useMemo(() => {
+    let minX = 0
+    let minY = 0
+    let maxX = envWidthPx
+    let maxY = envHeightPx
+    for (const obj of objects) {
+      const box = getBoundingBox(obj)
+      minX = Math.min(minX, cmToPx(box.minX, scalePxPerMeter))
+      minY = Math.min(minY, cmToPx(box.minY, scalePxPerMeter))
+      maxX = Math.max(maxX, cmToPx(box.maxX, scalePxPerMeter))
+      maxY = Math.max(maxY, cmToPx(box.maxY, scalePxPerMeter))
+    }
+    return {
+      offsetX: -minX + EXPORT_PADDING_PX,
+      offsetY: -minY + EXPORT_PADDING_PX,
+      width: maxX - minX + EXPORT_PADDING_PX * 2,
+      height: maxY - minY + EXPORT_PADDING_PX * 2,
+    }
+  }, [objects, envWidthPx, envHeightPx, scalePxPerMeter])
 
   useEffect(() => {
     const el = containerRef.current
@@ -432,6 +467,16 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
               />
             )}
           </Layer>
+          {flowOverlayVisible && (
+            <Layer listening={false}>
+              <FlowOverlay
+                flowConnections={flowConnections}
+                flowNodes={flowNodes}
+                objects={objects}
+                pxPerMeter={scalePxPerMeter}
+              />
+            </Layer>
+          )}
           <Layer>
             {objects
               .slice()
@@ -501,8 +546,21 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
           aria-hidden
           style={{ position: 'fixed', top: -99999, left: -99999, pointerEvents: 'none' }}
         >
-          <Stage ref={exportStageRef} width={envWidthPx} height={envHeightPx}>
+          <Stage ref={exportStageRef} width={exportBoundsPx.width} height={exportBoundsPx.height}>
             <Layer listening={false}>
+              {/* Explicit opaque backdrop covering the full canvas — toDataURL renders exactly
+                  what's drawn, nothing more, so without this any pixel not covered by the
+                  environment/objects (e.g. the padding margin, or gaps if a future change ever
+                  left a hole) would export as transparent instead of matching the live canvas. */}
+              <Rect
+                x={0}
+                y={0}
+                width={exportBoundsPx.width}
+                height={exportBoundsPx.height}
+                fill={isDarkMode ? EXPORT_BG_DARK : EXPORT_BG_LIGHT}
+              />
+            </Layer>
+            <Layer listening={false} x={exportBoundsPx.offsetX} y={exportBoundsPx.offsetY}>
               <Environment widthPx={envWidthPx} heightPx={envHeightPx} zoom={1} />
               {gridVisible && (
                 <Grid
@@ -515,7 +573,7 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
                 />
               )}
             </Layer>
-            <Layer listening={false}>
+            <Layer listening={false} x={exportBoundsPx.offsetX} y={exportBoundsPx.offsetY}>
               {objects
                 .slice()
                 .sort((a, b) => a.zIndex - b.zIndex)

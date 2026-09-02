@@ -64,6 +64,10 @@ export interface Layout {
   createdAt: string
   updatedAt: string
   objects: LayoutObject[]
+  /** Fluxo board data — belongs to the same project as `objects` (Layout), see docs/ARCHITECTURE.md
+   * § Fluxo. Optional/absent on layouts saved before this field existed. */
+  flowNodes?: import('./flow').FlowNode[]
+  flowConnections?: import('./flow').FlowConnection[]
 }
 
 export type LayoutSummary = Pick<

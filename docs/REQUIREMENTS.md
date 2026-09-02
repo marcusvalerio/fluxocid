@@ -101,6 +101,7 @@ status (`DEFINIDO`, `PROPOSTO`).
 | RF-74 | Empilhadeiras e paleteiras devem permitir um código de identificação/patrimônio, independente do nome livre do objeto. | P1 | DEFINIDO |
 | RF-75 | O sistema deve sinalizar visualmente quando dois porta-paletes/corredores se sobrepõem, sem bloquear a edição — ver `docs/BUSINESS_RULES.md` BR-60. | P1 | DEFINIDO |
 | RF-76 | O usuário deve poder exportar o layout atual como imagem (PNG), preservando a escala e a composição do ambiente (piso, grid, objetos), sem os elementos de edição (seleção, transformer, guias, réguas). | P1 | DEFINIDO |
+| RF-77 | O PNG exportado deve sempre ter fundo opaco (nunca transparente) e deve incluir objetos posicionados parcial ou totalmente fora do ambiente, sem cortá-los. | MVP | DEFINIDO |
 
 ### 1.8 Biblioteca logística ampliada (Fase 3)
 
@@ -110,6 +111,27 @@ status (`DEFINIDO`, `PROPOSTO`).
 | RF-81 | A biblioteca deve incluir os seguintes objetos de operação, cada um com representação visual própria: esteira transportadora, bancada de separação, mesa de packing, balança, impressora/estação de etiquetas, scanner/RF, área de conferência, área de expedição, área de recebimento. | P1 | DEFINIDO |
 | RF-82 | A biblioteca deve incluir os seguintes objetos de fluxo, cada um com representação visual própria: seta direcional, faixa de circulação, cruzamento, zona de segurança, faixa de pedestres. | P1 | DEFINIDO |
 | RF-83 | A biblioteca deve incluir um objeto de equipamento "carrinho de carga/plataforma", com representação visual própria. | P1 | DEFINIDO |
+
+### 1.9 Prancheta de Fluxo (LLP: Layout + Fluxo)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-90 | O usuário deve poder alternar entre a Prancheta de Layout e a Prancheta de Fluxo dentro do mesmo projeto, em desktop e mobile. | MVP | DEFINIDO |
+| RF-91 | O usuário deve poder criar nós de etapa de processo (Recebimento, Conferência, Armazenagem, Picking, Staging, Expedição, Devolução, Quarentena, Administrativa, Personalizada) na Prancheta de Fluxo. | MVP | DEFINIDO |
+| RF-92 | O usuário deve poder selecionar, mover, renomear, adicionar observação, duplicar e excluir um nó de fluxo. | MVP | DEFINIDO |
+| RF-93 | O usuário deve poder conectar dois nós através de uma alça de conexão, formando uma seta direcional com um tipo de fluxo (materiais, pallets, pessoas, empilhadeiras, picking). | MVP | DEFINIDO |
+| RF-94 | O usuário deve poder selecionar e excluir uma conexão, alterar seu tipo de fluxo e identificação, e inverter sua direção (trocar origem/destino). | MVP | DEFINIDO |
+| RF-95 | Excluir um nó deve excluir também as conexões que o referenciam (nunca deixar uma conexão "pendurada"). | MVP | DEFINIDO |
+| RF-96 | O usuário deve poder associar um nó de fluxo a uma área/objeto já existente na Prancheta de Layout, sem duplicar os dados do objeto — apenas uma referência (`linkedObjectId`). | P1 | DEFINIDO |
+| RF-97 | Layout e Fluxo devem ser persistidos juntos, no mesmo projeto (mesmo layout salvo), e restaurados juntos ao reabrir. | MVP | DEFINIDO |
+| RF-98 | O usuário deve poder exibir/ocultar, sobre a Prancheta de Layout, as conexões de fluxo cujos dois extremos estejam associados a áreas/objetos do Layout — sem bloquear a edição do Layout. | P1 | DEFINIDO |
+
+### 1.10 Métricas e propriedades de equipamento (P8)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-99 | O sistema deve exibir um painel de métricas do projeto: área total, área de armazenagem, área operacional, área de circulação, ocupação, posições de pallet, quantidade de equipamentos, quantidade de docas, comprimento de corredores, quantidade de áreas e quantidade de etapas de fluxo. | P1 | DEFINIDO |
+| RF-100 | Empilhadeira, paleteira e carrinho de carga/plataforma devem permitir registrar capacidade (kg), raio de giro (m) e largura mínima de corredor (m) — informativo nesta fase, preparado para validações espaciais automáticas futuras. | P2 | DEFINIDO |
 
 ## 2. Requisitos não funcionais
 

@@ -1,9 +1,13 @@
 # FluxoCit
 
-Ferramenta de planejamento e montagem de layout operacional logístico em
-**2D** — paredes, áreas, porta-paletes, pallets, corredores, docas,
+Ferramenta de planejamento logístico em **2D**, organizada em torno de
+**LAYOUT + FLUXO**: a Prancheta de Layout responde "onde cada coisa
+fica" (paredes, áreas, porta-paletes, pallets, corredores, docas,
 empilhadeiras e paleteiras, com escala real, snapping, undo/redo e
-persistência.
+persistência); a Prancheta de Fluxo responde "como a operação
+acontece" (nós de etapa de processo conectados por setas direcionais
+tipadas, associáveis a áreas/objetos do Layout). Ambas pertencem ao
+mesmo projeto e são persistidas juntas.
 
 > Nesta fase o produto é exclusivamente 2D. Ver `docs/PRODUCT.md`.
 
@@ -86,6 +90,38 @@ npm run lint      # lint (oxlint)
       correção definitiva do painel de propriedades no mobile
       (recolhe sob toque no canvas, nunca reabre sozinho, X nunca
       exclui)
+
+### Roadmap LLP: Layout + Fluxo (em andamento)
+
+- [x] P1 — Exportação PNG sempre com fundo opaco, incluindo objetos
+      fora dos limites do ambiente (sem cortar), em ambos os temas
+- [x] P2 — Biblioteca visual já auditada (todos os 27 tipos de objeto
+      têm representação técnica 2D própria, herdada das fases
+      anteriores)
+- [x] P3/P4/P5/P6 — Prancheta de Fluxo: segunda prancheta do mesmo
+      projeto (alternância Layout/Fluxo em desktop e mobile), nós de
+      etapa de processo (criar/mover/editar/duplicar/excluir),
+      conexões direcionais tipadas (materiais/pallets/pessoas/
+      empilhadeiras/picking) via alça de arraste, associação de um nó
+      a uma área/objeto do Layout (sem duplicar dados), persistência
+      de Layout + Fluxo no mesmo projeto
+- [x] P7 — Visualizar o fluxo sobreposto ao Layout: toggle "Mostrar
+      fluxo sobre o layout" desenha as conexões (cor/estilo por tipo)
+      entre os objetos associados, somente leitura
+- [x] P8 — Evoluir regras espaciais e métricas: painel de Métricas
+      (área total/armazenagem/operacional/circulação, ocupação,
+      posições de pallet, contagem de equipamentos/docas/áreas,
+      comprimento de corredores, etapas de fluxo); empilhadeira,
+      paleteira e carrinho passam a registrar capacidade, raio de giro
+      e largura mínima de corredor (informativo, preparado para
+      validações automáticas futuras)
+- [x] P9 — QA completo: adiciona inverter direção de conexão (ação
+      antes ausente no fluxograma) e pinch-zoom de duas dedos na
+      Prancheta de Fluxo (paridade de toque com o Layout); revalidados
+      redimensionar, seleção múltipla/alinhar/distribuir, undo/redo,
+      exportação com fundo sólido em mobile, e persistência completa
+      Layout+Fluxo após reload — 63 testes automatizados, sem
+      regressões encontradas
 
 Fora do escopo desta etapa (aguardando instrução): Supabase,
 autenticação, backend, banco de dados em nuvem, editor 3D, deploy

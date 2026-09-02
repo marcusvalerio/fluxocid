@@ -3,6 +3,8 @@ import { createId } from '../../../shared/lib/id'
 import { normalizeDeg } from '../../../shared/lib/units'
 import { getBoundingBox, snapToGrid } from '../../../shared/lib/geometry'
 import type { Layout, LayoutObject, ObjectTypeKey } from '../../../types/layout'
+import type { FlowConnection, FlowConnectionType, FlowNode, FlowNodeType } from '../../../types/flow'
+import { FLOW_NODE_SIZE } from '../../../types/flow'
 import { OBJECT_CATALOG } from '../objects/catalog'
 
 export type AlignMode = 'left' | 'right' | 'top' | 'bottom' | 'centerX' | 'centerY'
@@ -35,10 +37,21 @@ interface EditorState {
   camera: Camera
   snapEnabled: boolean
   gridVisible: boolean
+  /** Layout board: shows connections from the Fluxo board whose endpoints are both linked to a
+   * Layout object, overlaid on the canvas (P7 — "visualizar o fluxo sobre o Layout"). */
+  flowOverlayVisible: boolean
   /** Mobile: entered via long-press on an object; while true, taps toggle selection instead of replacing it. */
   multiSelectMode: boolean
   saveStatus: SaveStatus
   history: { past: LayoutObject[][]; future: LayoutObject[][] }
+
+  // --- Fluxo board (same project, separate data — see docs/ARCHITECTURE.md § Fluxo) ---
+  flowNodes: FlowNode[]
+  flowConnections: FlowConnection[]
+  selectedFlowNodeId: string | null
+  selectedFlowConnectionId: string | null
+  /** Set while the user is dragging a connection out of a node's handle; cleared on drop. */
+  pendingConnectionFromId: string | null
 
   loadLayout: (layout: Layout) => void
   setEnvironmentSize: (widthM: number, heightM: number) => void
@@ -66,6 +79,21 @@ interface EditorState {
   toggleGrid: () => void
   setSaveStatus: (status: SaveStatus) => void
   setMultiSelectMode: (enabled: boolean) => void
+  toggleFlowOverlay: () => void
+
+  addFlowNode: (type: FlowNodeType, x: number, y: number) => void
+  moveFlowNodeLive: (id: string, x: number, y: number) => void
+  commitFlowNodePosition: (id: string, x: number, y: number) => void
+  setFlowNodeProperty: (id: string, key: string, value: unknown) => void
+  selectFlowNode: (id: string | null) => void
+  deleteFlowNode: (id: string) => void
+  duplicateFlowNode: (id: string) => void
+  addFlowConnection: (fromId: string, toId: string, flowType: FlowConnectionType) => void
+  selectFlowConnection: (id: string | null) => void
+  setFlowConnectionProperty: (id: string, key: string, value: unknown) => void
+  reverseFlowConnection: (id: string) => void
+  deleteFlowConnection: (id: string) => void
+  setPendingConnectionFrom: (id: string | null) => void
 }
 
 function snapshot(objects: LayoutObject[]): LayoutObject[] {
@@ -84,9 +112,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   camera: { x: 0, y: 0, zoom: 1 },
   snapEnabled: true,
   gridVisible: true,
+  flowOverlayVisible: false,
   multiSelectMode: false,
   saveStatus: 'idle',
   history: { past: [], future: [] },
+
+  flowNodes: [],
+  flowConnections: [],
+  selectedFlowNodeId: null,
+  selectedFlowConnectionId: null,
+  pendingConnectionFromId: null,
 
   loadLayout: (layout) =>
     set({
@@ -100,6 +135,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       selectedIds: [],
       history: { past: [], future: [] },
       saveStatus: 'idle',
+      flowNodes: layout.flowNodes ?? [],
+      flowConnections: layout.flowConnections ?? [],
+      selectedFlowNodeId: null,
+      selectedFlowConnectionId: null,
+      pendingConnectionFromId: null,
     }),
 
   setEnvironmentSize: (widthM, heightM) =>
@@ -399,4 +439,92 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   toggleGrid: () => set({ gridVisible: !get().gridVisible }),
   setSaveStatus: (status) => set({ saveStatus: status }),
   setMultiSelectMode: (enabled) => set({ multiSelectMode: enabled }),
+  toggleFlowOverlay: () => set({ flowOverlayVisible: !get().flowOverlayVisible }),
+
+  // --- Fluxo board — no undo history (not required by product scope); every mutation commits
+  // straight to state, mirroring the simpler "diagram" nature of this board vs. the spatial one. ---
+
+  addFlowNode: (type, x, y) => {
+    const { flowNodes } = get()
+    // Successive inserts land at the same requested point (the view center) — cascade each one
+    // a bit further down/right so a quick run of "add step" taps reads as a list, not a stack of
+    // perfectly overlapping boxes.
+    const cascade = flowNodes.length % 8
+    const newNode: FlowNode = {
+      id: createId(),
+      type,
+      x: x - FLOW_NODE_SIZE.width / 2 + cascade * 28,
+      y: y - FLOW_NODE_SIZE.height / 2 + cascade * 28,
+    }
+    set({
+      flowNodes: [...flowNodes, newNode],
+      selectedFlowNodeId: newNode.id,
+      selectedFlowConnectionId: null,
+    })
+  },
+
+  moveFlowNodeLive: (id, x, y) => {
+    set({ flowNodes: get().flowNodes.map((n) => (n.id === id ? { ...n, x, y } : n)) })
+  },
+
+  commitFlowNodePosition: (id, x, y) => {
+    set({ flowNodes: get().flowNodes.map((n) => (n.id === id ? { ...n, x, y } : n)) })
+  },
+
+  setFlowNodeProperty: (id, key, value) => {
+    set({
+      flowNodes: get().flowNodes.map((n) => (n.id === id ? { ...n, [key]: value } : n)),
+    })
+  },
+
+  selectFlowNode: (id) => set({ selectedFlowNodeId: id, selectedFlowConnectionId: id ? null : get().selectedFlowConnectionId }),
+
+  deleteFlowNode: (id) => {
+    set({
+      flowNodes: get().flowNodes.filter((n) => n.id !== id),
+      flowConnections: get().flowConnections.filter((c) => c.fromNodeId !== id && c.toNodeId !== id),
+      selectedFlowNodeId: get().selectedFlowNodeId === id ? null : get().selectedFlowNodeId,
+    })
+  },
+
+  duplicateFlowNode: (id) => {
+    const original = get().flowNodes.find((n) => n.id === id)
+    if (!original) return
+    const copy: FlowNode = { ...original, id: createId(), x: original.x + 24, y: original.y + 24 }
+    set({ flowNodes: [...get().flowNodes, copy], selectedFlowNodeId: copy.id })
+  },
+
+  addFlowConnection: (fromId, toId, flowType) => {
+    if (fromId === toId) return
+    const { flowConnections } = get()
+    const alreadyExists = flowConnections.some((c) => c.fromNodeId === fromId && c.toNodeId === toId)
+    if (alreadyExists) return
+    const newConnection: FlowConnection = { id: createId(), fromNodeId: fromId, toNodeId: toId, flowType }
+    set({ flowConnections: [...flowConnections, newConnection], selectedFlowConnectionId: newConnection.id, selectedFlowNodeId: null })
+  },
+
+  selectFlowConnection: (id) => set({ selectedFlowConnectionId: id, selectedFlowNodeId: id ? null : get().selectedFlowNodeId }),
+
+  setFlowConnectionProperty: (id, key, value) => {
+    set({
+      flowConnections: get().flowConnections.map((c) => (c.id === id ? { ...c, [key]: value } : c)),
+    })
+  },
+
+  reverseFlowConnection: (id) => {
+    set({
+      flowConnections: get().flowConnections.map((c) =>
+        c.id === id ? { ...c, fromNodeId: c.toNodeId, toNodeId: c.fromNodeId } : c,
+      ),
+    })
+  },
+
+  deleteFlowConnection: (id) => {
+    set({
+      flowConnections: get().flowConnections.filter((c) => c.id !== id),
+      selectedFlowConnectionId: get().selectedFlowConnectionId === id ? null : get().selectedFlowConnectionId,
+    })
+  },
+
+  setPendingConnectionFrom: (id) => set({ pendingConnectionFromId: id }),
 }))
