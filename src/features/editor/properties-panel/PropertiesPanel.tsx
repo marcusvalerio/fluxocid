@@ -4,21 +4,30 @@ import { useEditorStore } from '../state/useEditorStore'
 import { cmToM, mToCm } from '../../../shared/lib/units'
 import { NumberField } from '../../../shared/ui/NumberField'
 import { IconButton } from '../../../shared/ui/IconButton'
+import type { BoundsStatus } from '../../../shared/lib/spatialRules'
 import type { LayoutObject } from '../../../types/layout'
 
 interface PropertiesPanelProps {
   object: LayoutObject
   /** True when this object's footprint overlaps another storage object (rack/corridor). */
   hasOverlap?: boolean
+  /** Whether the object sits inside, straddles, or is entirely off the environment. */
+  boundsStatus?: BoundsStatus
 }
 
-export function PropertiesPanel({ object, hasOverlap }: PropertiesPanelProps) {
+const BOUNDS_WARNING_TEXT: Partial<Record<BoundsStatus, string>> = {
+  partial: 'Parcialmente fora do ambiente — parte do objeto ultrapassa o limite.',
+  outside: 'Totalmente fora do ambiente — o objeto está fora dos limites definidos.',
+}
+
+export function PropertiesPanel({ object, hasOverlap, boundsStatus }: PropertiesPanelProps) {
   const setProperty = useEditorStore((s) => s.setProperty)
   const deleteObject = useEditorStore((s) => s.deleteObject)
   const duplicateObject = useEditorStore((s) => s.duplicateObject)
   const rotateObject = useEditorStore((s) => s.rotateObject)
 
   const def = OBJECT_CATALOG[object.objectType]
+  const boundsWarning = boundsStatus ? BOUNDS_WARNING_TEXT[boundsStatus] : undefined
 
   return (
     <div className="space-y-4">
@@ -26,6 +35,12 @@ export function PropertiesPanel({ object, hasOverlap }: PropertiesPanelProps) {
         <div className="flex items-start gap-2 rounded-md bg-danger/10 text-danger text-sm p-2.5">
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>Sobreposto com outro porta-paletes ou corredor — ajuste a posição.</span>
+        </div>
+      )}
+      {boundsWarning && (
+        <div className="flex items-start gap-2 rounded-md bg-warning/10 text-warning text-sm p-2.5">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <span>{boundsWarning}</span>
         </div>
       )}
       <div className="flex items-center justify-between">

@@ -6,6 +6,19 @@ status (`DEFINIDO`, `PROPOSTO`).
 
 ## 1. Requisitos funcionais
 
+### 1.0 Ambiente (espaço físico real)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-00a | O usuário deve poder definir largura e comprimento reais (m) do ambiente ao criar um layout. | MVP | DEFINIDO |
+| RF-00b | O usuário deve poder editar as dimensões do ambiente depois de criado. | MVP | DEFINIDO |
+| RF-00c | O canvas deve exibir o ambiente como uma área distinta (piso) do espaço "fora" dele, com grid restrito aos seus limites. | MVP | DEFINIDO |
+| RF-00d | O canvas deve exibir réguas com marcação em metros nas bordas superior e esquerda, acompanhando pan e zoom. | MVP | DEFINIDO |
+| RF-00e | O usuário deve ter um comando para enquadrar o ambiente inteiro na tela. | MVP | DEFINIDO |
+| RF-00f | O sistema deve sinalizar visualmente quando um objeto está parcial ou totalmente fora do ambiente, sem bloquear a ação. | MVP | DEFINIDO |
+| RF-00g | O snapping deve considerar as bordas do ambiente como alvo, além de outros objetos e da grade. | P1 | DEFINIDO |
+| RF-00h | O sistema deve exibir a área total do ambiente e uma estimativa de ocupação. | P1 | DEFINIDO |
+
 ### 1.1 Autenticação e conta
 
 | ID | Descrição | Prioridade | Status |

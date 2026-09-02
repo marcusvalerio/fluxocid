@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Rect } from 'react-konva'
 import type Konva from 'konva'
+import { Environment } from './Environment'
 import { Grid } from './Grid'
 import { ObjectNode } from './ObjectNode'
+import { RULER_SIZE, Rulers } from './Rulers'
 import { GuideLines, type SnapGuides } from './GuideLines'
 import { SelectionTransformer } from './SelectionTransformer'
-import { useEditorStore } from '../state/useEditorStore'
+import { useEditorStore, type Camera } from '../state/useEditorStore'
 import { getBoundingBox } from '../../../shared/lib/geometry'
-import { findStorageOverlaps } from '../../../shared/lib/spatialRules'
-import { pxToCm } from '../../../shared/lib/units'
+import { findStorageOverlaps, getBoundsStatus } from '../../../shared/lib/spatialRules'
+import { cmToPx, pxToCm } from '../../../shared/lib/units'
 import type { ObjectTypeKey } from '../../../types/layout'
 
 const MIN_ZOOM = 0.2
@@ -41,6 +43,7 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
   const [guides, setGuides] = useState<SnapGuides | null>(null)
   const [isDraggingObject, setIsDraggingObject] = useState(false)
   const [cursor, setCursor] = useState<'default' | 'grab' | 'grabbing'>('default')
+  const [cursorWorldM, setCursorWorldM] = useState<{ x: number; y: number } | null>(null)
 
   const lastPinchDistance = useRef<number | null>(null)
   const lastPinchCenter = useRef<{ x: number; y: number } | null>(null)
@@ -61,7 +64,18 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
   const scalePxPerMeter = useEditorStore((s) => s.scalePxPerMeter)
   const gridVisible = useEditorStore((s) => s.gridVisible)
   const addObject = useEditorStore((s) => s.addObject)
+  const envWidthM = useEditorStore((s) => s.envWidthM)
+  const envHeightM = useEditorStore((s) => s.envHeightM)
+  const envWidthPx = cmToPx(envWidthM * 100, scalePxPerMeter)
+  const envHeightPx = cmToPx(envHeightM * 100, scalePxPerMeter)
   const overlappingIds = useMemo(() => findStorageOverlaps(objects), [objects])
+  const boundsStatusById = useMemo(() => {
+    const envWidthCm = envWidthM * 100
+    const envHeightCm = envHeightM * 100
+    const map = new Map<string, ReturnType<typeof getBoundsStatus>>()
+    for (const o of objects) map.set(o.id, getBoundsStatus(o, envWidthCm, envHeightCm))
+    return map
+  }, [objects, envWidthM, envHeightM])
 
   useEffect(() => {
     const el = containerRef.current
@@ -123,11 +137,27 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
     }
   }, [])
 
-  useEffect(() => {
-    function clampZoom(z: number) {
-      return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z))
-    }
+  function clampZoom(z: number) {
+    return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z))
+  }
 
+  /** Zoom/pan so the whole environment rectangle is framed with padding, clear of the rulers. */
+  function computeFitCamera(): Partial<Camera> | null {
+    const padding = 32
+    const availWidth = size.width - RULER_SIZE - padding * 2
+    const availHeight = size.height - RULER_SIZE - padding * 2
+    if (availWidth <= 0 || availHeight <= 0 || envWidthPx <= 0 || envHeightPx <= 0) return null
+    const newZoom = clampZoom(Math.min(availWidth / envWidthPx, availHeight / envHeightPx))
+    const contentWidth = envWidthPx * newZoom
+    const contentHeight = envHeightPx * newZoom
+    return {
+      zoom: newZoom,
+      x: RULER_SIZE + padding + (availWidth - contentWidth) / 2,
+      y: RULER_SIZE + padding + (availHeight - contentHeight) / 2,
+    }
+  }
+
+  useEffect(() => {
     registerHandle({
       insertAtCenter: (objectType) => {
         const worldXPx = (size.width / 2 - camera.x) / camera.zoom
@@ -138,9 +168,26 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
       },
       zoomIn: () => setCamera({ zoom: clampZoom(camera.zoom * 1.25) }),
       zoomOut: () => setCamera({ zoom: clampZoom(camera.zoom / 1.25) }),
-      fitToView: () => setCamera({ x: size.width / 2, y: size.height / 2, zoom: 1 }),
+      fitToView: () => {
+        const fit = computeFitCamera()
+        if (fit) setCamera(fit)
+      },
     })
-  }, [registerHandle, size, camera, scalePxPerMeter, addObject, setCamera])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registerHandle, size, camera, scalePxPerMeter, addObject, setCamera, envWidthPx, envHeightPx])
+
+  // Auto-fit once per layout load, as soon as the container has been measured — so opening a
+  // layout always starts framed on its environment instead of wherever the camera last was.
+  const lastFittedLayoutId = useRef<string | null>(null)
+  const storeLayoutId = useEditorStore((s) => s.layoutId)
+  useEffect(() => {
+    if (!storeLayoutId || lastFittedLayoutId.current === storeLayoutId) return
+    const fit = computeFitCamera()
+    if (!fit) return
+    lastFittedLayoutId.current = storeLayoutId
+    setCamera(fit)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeLayoutId, size.width, size.height, envWidthPx, envHeightPx])
 
   function handleWheel(e: Konva.KonvaEventObject<WheelEvent>) {
     e.evt.preventDefault()
@@ -197,6 +244,10 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
     if (!stage) return
     const pointer = stage.getPointerPosition()
     if (!pointer) return
+
+    const worldXCm = pxToCm((pointer.x - camera.x) / camera.zoom, scalePxPerMeter)
+    const worldYCm = pxToCm((pointer.y - camera.y) / camera.zoom, scalePxPerMeter)
+    setCursorWorldM({ x: worldXCm / 100, y: worldYCm / 100 })
 
     if (mouseModeRef.current === 'pan' && panLastScreenRef.current) {
       const dx = pointer.x - panLastScreenRef.current.x
@@ -342,17 +393,26 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          onMouseLeave={() => setCursorWorldM(null)}
           onWheel={handleWheel}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onTap={handleTap}
         >
-          {gridVisible && (
-            <Layer listening={false}>
-              <Grid pxPerMeter={scalePxPerMeter} camera={camera} stageWidth={size.width} stageHeight={size.height} />
-            </Layer>
-          )}
+          <Layer listening={false}>
+            <Environment widthPx={envWidthPx} heightPx={envHeightPx} zoom={camera.zoom} />
+            {gridVisible && (
+              <Grid
+                pxPerMeter={scalePxPerMeter}
+                camera={camera}
+                stageWidth={size.width}
+                stageHeight={size.height}
+                envWidthPx={envWidthPx}
+                envHeightPx={envHeightPx}
+              />
+            )}
+          </Layer>
           <Layer>
             {objects
               .slice()
@@ -364,6 +424,7 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
                   pxPerMeter={scalePxPerMeter}
                   selected={selectedIds.includes(obj.id)}
                   hasOverlap={overlappingIds.has(obj.id)}
+                  boundsStatus={boundsStatusById.get(obj.id) ?? 'inside'}
                   registerRef={(id, node) => {
                     if (node) nodesById.current.set(id, node)
                     else nodesById.current.delete(id)
@@ -397,6 +458,21 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
             )}
           </Layer>
         </Stage>
+      )}
+      {size.width > 0 && (
+        <Rulers
+          camera={camera}
+          scalePxPerMeter={scalePxPerMeter}
+          envWidthM={envWidthM}
+          envHeightM={envHeightM}
+          containerWidth={size.width}
+          containerHeight={size.height}
+        />
+      )}
+      {cursorWorldM && (
+        <div className="hidden md:block absolute bottom-3 left-1/2 -translate-x-1/2 bg-surface/95 border border-border rounded-md shadow-sm px-3 py-1.5 text-xs text-text-secondary font-medium pointer-events-none">
+          X: {cursorWorldM.x.toFixed(2)} m &nbsp;·&nbsp; Y: {cursorWorldM.y.toFixed(2)} m
+        </div>
       )}
     </div>
   )

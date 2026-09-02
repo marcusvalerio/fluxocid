@@ -6,6 +6,7 @@ import { useEditorStore } from '../state/useEditorStore'
 import { cmToPx, pxToCm } from '../../../shared/lib/units'
 import { getBoundingBox, snapToGrid } from '../../../shared/lib/geometry'
 import { resolveObjectSnap } from '../../../shared/lib/snap'
+import type { BoundsStatus } from '../../../shared/lib/spatialRules'
 import type { LayoutObject } from '../../../types/layout'
 import type { SnapGuides } from './GuideLines'
 
@@ -18,6 +19,8 @@ interface ObjectNodeProps {
   selected: boolean
   /** True when this object's footprint overlaps another storage object (rack/corridor) — see spatialRules.ts. */
   hasOverlap: boolean
+  /** Whether the object's footprint sits inside, straddles, or is entirely off the environment. */
+  boundsStatus: BoundsStatus
   registerRef: (id: string, node: Konva.Group | null) => void
   onSnapGuideChange: (guides: SnapGuides | null) => void
   onDraggingChange: (dragging: boolean) => void
@@ -28,6 +31,7 @@ export function ObjectNode({
   pxPerMeter,
   selected,
   hasOverlap,
+  boundsStatus,
   registerRef,
   onSnapGuideChange,
   onDraggingChange,
@@ -36,6 +40,8 @@ export function ObjectNode({
   const snapEnabled = useEditorStore((s) => s.snapEnabled)
   const zoom = useEditorStore((s) => s.camera.zoom)
   const selectedCount = useEditorStore((s) => s.selectedIds.length)
+  const envWidthM = useEditorStore((s) => s.envWidthM)
+  const envHeightM = useEditorStore((s) => s.envHeightM)
 
   const originRef = useRef<Map<string, { x: number; y: number }> | null>(null)
   const dragAnchorStartPxRef = useRef<{ x: number; y: number } | null>(null)
@@ -136,6 +142,9 @@ export function ObjectNode({
       const movingIds = new Set(origin.keys())
       const anchorBox = getBoundingBox({ ...obj, x: rawAnchorX, y: rawAnchorY })
       const otherBoxes = store.objects.filter((o) => !movingIds.has(o.id)).map(getBoundingBox)
+      // The environment's own edges are valid snap targets too — flush against a wall is a very
+      // common intentional placement (see docs/BUSINESS_RULES.md § Ambiente).
+      otherBoxes.push({ minX: 0, minY: 0, maxX: envWidthM * 100, maxY: envHeightM * 100 })
       const thresholdCm = pxToCm(SNAP_THRESHOLD_SCREEN_PX / zoom, pxPerMeter)
       const snapResult = resolveObjectSnap(anchorBox, otherBoxes, thresholdCm)
       const stepCm = gridStepM * 100
@@ -209,6 +218,16 @@ export function ObjectNode({
           stroke="#DC2626"
           strokeWidth={2.5}
           dash={[6, 4]}
+          listening={false}
+        />
+      )}
+      {boundsStatus !== 'inside' && (
+        <Rect
+          width={widthPx}
+          height={lengthPx}
+          stroke="#D97706"
+          strokeWidth={2.5}
+          dash={[3, 3]}
           listening={false}
         />
       )}

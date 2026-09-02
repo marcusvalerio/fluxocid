@@ -15,14 +15,16 @@ import {
   Trash2,
   Undo2,
   Maximize,
+  Warehouse,
 } from 'lucide-react'
 import { EditorCanvas, type EditorCanvasHandle } from './canvas/EditorCanvas'
+import { EnvironmentPanel } from './environment-panel/EnvironmentPanel'
 import { LibraryPanel } from './library-panel/LibraryPanel'
 import { PropertiesPanel } from './properties-panel/PropertiesPanel'
 import { SelectionToolbar } from './properties-panel/SelectionToolbar'
 import { useEditorStore } from './state/useEditorStore'
 import { layoutRepository } from '../../shared/data/LocalLayoutRepository'
-import { findStorageOverlaps } from '../../shared/lib/spatialRules'
+import { findStorageOverlaps, getBoundsStatus } from '../../shared/lib/spatialRules'
 import { IconButton } from '../../shared/ui/IconButton'
 import { BottomSheet } from '../../shared/ui/BottomSheet'
 import type { ObjectTypeKey } from '../../types/layout'
@@ -32,6 +34,7 @@ export function EditorPage() {
   const navigate = useNavigate()
   const canvasHandleRef = useRef<EditorCanvasHandle | null>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [environmentOpen, setEnvironmentOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const layoutName = useEditorStore((s) => s.layoutName)
@@ -58,9 +61,15 @@ export function EditorPage() {
   const setSaveStatus = useEditorStore((s) => s.setSaveStatus)
   const layoutId2 = useEditorStore((s) => s.layoutId)
 
+  const envWidthM = useEditorStore((s) => s.envWidthM)
+  const envHeightM = useEditorStore((s) => s.envHeightM)
+
   const selectedObject = selectedIds.length === 1 ? objects.find((o) => o.id === selectedIds[0]) : undefined
   const hasMultiSelection = selectedIds.length > 1
   const overlappingIds = useMemo(() => findStorageOverlaps(objects), [objects])
+  const selectedBoundsStatus = selectedObject
+    ? getBoundsStatus(selectedObject, envWidthM * 100, envHeightM * 100)
+    : undefined
 
   const registerHandle = useCallback((handle: EditorCanvasHandle) => {
     canvasHandleRef.current = handle
@@ -188,11 +197,27 @@ export function EditorPage() {
             <IconButton label="Alternar snap" active={snapEnabled} onClick={() => setSnapEnabled(!snapEnabled)}>
               <Magnet size={18} />
             </IconButton>
+            <IconButton
+              label="Configurar ambiente"
+              active={environmentOpen}
+              onClick={() => {
+                selectObject(null)
+                setEnvironmentOpen((v) => !v)
+              }}
+            >
+              <Warehouse size={18} />
+            </IconButton>
           </div>
+
+          {environmentOpen && (
+            <aside className="hidden md:block absolute bottom-3 right-3 w-72 bg-surface border border-border rounded-lg shadow-sm p-4">
+              <EnvironmentPanel />
+            </aside>
+          )}
 
           {selectedObject && (
             <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4">
-              <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} />
+              <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} boundsStatus={selectedBoundsStatus} />
             </aside>
           )}
 
@@ -259,7 +284,7 @@ export function EditorPage() {
             onClose={() => selectObject(null)}
             modal={false}
           >
-            <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} />
+            <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} boundsStatus={selectedBoundsStatus} />
           </BottomSheet>
         </div>
       )}
@@ -268,6 +293,14 @@ export function EditorPage() {
         <div className="md:hidden">
           <BottomSheet title="Seleção múltipla" onClose={() => selectObject(null)} modal={false}>
             <SelectionToolbar />
+          </BottomSheet>
+        </div>
+      )}
+
+      {environmentOpen && (
+        <div className="md:hidden">
+          <BottomSheet title="Ambiente" onClose={() => setEnvironmentOpen(false)}>
+            <EnvironmentPanel />
           </BottomSheet>
         </div>
       )}

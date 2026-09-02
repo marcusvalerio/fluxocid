@@ -61,8 +61,21 @@ npm run lint      # lint (oxlint)
       computada (vãos × níveis) do porta-paletes, área ocupada (m²)
       computada, identificação de equipamentos, sinalização visual de
       sobreposição entre porta-paletes/corredores
-- [ ] Fase 8 — QA e validação abrangente
-- [ ] Fase 9 — Polimento final
+
+### Roadmap de evolução (3 fases, executadas nesta ordem)
+
+- [x] Fase 2 — Editor profissional + escala real: ambiente com
+      dimensões reais (m) definidas na criação e editáveis depois, piso
+      distinto do espaço "fora" com grid restrito aos seus limites,
+      réguas em metros acompanhando pan/zoom, leitura de coordenadas do
+      cursor, comando "ajustar ao ambiente" (auto-executado ao abrir um
+      layout), painel do ambiente (dimensões, área total, ocupação
+      estimada), aviso visual de objeto parcial/totalmente fora do
+      ambiente, snapping às bordas do ambiente
+- [ ] Fase 3 — Biblioteca logística + operação + exportação
+- [ ] Fase 1 — Design system + refinamento visual (temas claro/escuro,
+      tipografia, motion, correção definitiva do painel de propriedades
+      no mobile)
 
 Fora do escopo desta etapa (aguardando instrução): Supabase,
 autenticação, backend, banco de dados em nuvem, editor 3D, deploy
