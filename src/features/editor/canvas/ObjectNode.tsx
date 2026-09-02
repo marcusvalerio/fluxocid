@@ -197,14 +197,6 @@ export function ObjectNode({
     <Group
       ref={(node) => {
         registerRef(obj.id, node)
-        // A quick scale/opacity pop on mount — the "objeto inserido" microinteraction. The ref
-        // callback only fires once per mount (obj.id is a stable React key), so this can't
-        // replay on ordinary re-renders (drag, property edits, etc).
-        if (node) {
-          node.scale({ x: 0.85, y: 0.85 })
-          node.opacity(0)
-          node.to({ scaleX: 1, scaleY: 1, opacity: 1, duration: 0.12, easing: Konva.Easings.EaseOut })
-        }
       }}
       x={centerXPx}
       y={centerYPx}
