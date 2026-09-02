@@ -101,6 +101,7 @@ status (`DEFINIDO`, `PROPOSTO`).
 | RF-74 | Empilhadeiras e paleteiras devem permitir um código de identificação/patrimônio, independente do nome livre do objeto. | P1 | DEFINIDO |
 | RF-75 | O sistema deve sinalizar visualmente quando dois porta-paletes/corredores se sobrepõem, sem bloquear a edição — ver `docs/BUSINESS_RULES.md` BR-60. | P1 | DEFINIDO |
 | RF-76 | O usuário deve poder exportar o layout atual como imagem (PNG), preservando a escala e a composição do ambiente (piso, grid, objetos), sem os elementos de edição (seleção, transformer, guias, réguas). | P1 | DEFINIDO |
+| RF-77 | O PNG exportado deve sempre ter fundo opaco (nunca transparente) e deve incluir objetos posicionados parcial ou totalmente fora do ambiente, sem cortá-los. | MVP | DEFINIDO |
 
 ### 1.8 Biblioteca logística ampliada (Fase 3)
 
