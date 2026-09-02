@@ -41,7 +41,7 @@ export function NumberField({ label, value, unit, step = 1, min, onCommit }: Num
           onKeyDown={(e) => {
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
           }}
-          className="w-20 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="w-20 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
         <span className="text-text-secondary w-5">{unit}</span>
       </span>
