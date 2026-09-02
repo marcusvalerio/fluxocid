@@ -107,6 +107,21 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
             )
           }
 
+          if (field.kind === 'number-plain') {
+            const raw = Number(object.properties[field.key] ?? 0)
+            return (
+              <NumberField
+                key={field.key}
+                label={field.label}
+                unit={field.unit ?? ''}
+                step={field.step ?? 1}
+                min={field.min}
+                value={raw}
+                onCommit={(v) => setProperty(object.id, field.key, v)}
+              />
+            )
+          }
+
           if (field.kind === 'select') {
             const value = String(object.properties[field.key] ?? field.options?.[0]?.value ?? '')
             return (

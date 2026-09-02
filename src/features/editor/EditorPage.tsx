@@ -18,9 +18,11 @@ import {
   Maximize,
   Warehouse,
   Workflow,
+  BarChart3,
 } from 'lucide-react'
 import { EditorCanvas, type EditorCanvasHandle } from './canvas/EditorCanvas'
 import { EnvironmentPanel } from './environment-panel/EnvironmentPanel'
+import { MetricsPanel } from './metrics-panel/MetricsPanel'
 import { LibraryPanel } from './library-panel/LibraryPanel'
 import { PropertiesPanel } from './properties-panel/PropertiesPanel'
 import { SelectionToolbar } from './properties-panel/SelectionToolbar'
@@ -46,6 +48,7 @@ export function EditorPage() {
   const [board, setBoard] = useState<Board>('layout')
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [environmentOpen, setEnvironmentOpen] = useState(false)
+  const [metricsOpen, setMetricsOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   // Mobile properties sheet: starts collapsed on every new selection (so it never sits on top
   // of a just-inserted/selected object, which appears at the viewport center) and is forced
@@ -336,10 +339,22 @@ export function EditorPage() {
               active={environmentOpen}
               onClick={() => {
                 selectObject(null)
+                setMetricsOpen(false)
                 setEnvironmentOpen((v) => !v)
               }}
             >
               <Warehouse size={18} />
+            </IconButton>
+            <IconButton
+              label="Métricas do projeto"
+              active={metricsOpen}
+              onClick={() => {
+                selectObject(null)
+                setEnvironmentOpen(false)
+                setMetricsOpen((v) => !v)
+              }}
+            >
+              <BarChart3 size={18} />
             </IconButton>
             <IconButton label="Exportar como imagem (PNG)" onClick={() => canvasHandleRef.current?.exportPng()}>
               <Download size={18} />
@@ -349,6 +364,12 @@ export function EditorPage() {
           {environmentOpen && (
             <aside className="hidden md:block absolute bottom-3 right-3 w-72 bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
               <EnvironmentPanel />
+            </aside>
+          )}
+
+          {metricsOpen && (
+            <aside className="hidden md:block absolute bottom-3 right-3 w-72 max-h-[calc(100%-1.5rem)] overflow-y-auto bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
+              <MetricsPanel />
             </aside>
           )}
 
@@ -509,6 +530,14 @@ export function EditorPage() {
         <div className="md:hidden">
           <BottomSheet title="Ambiente" onClose={() => setEnvironmentOpen(false)}>
             <EnvironmentPanel />
+          </BottomSheet>
+        </div>
+      )}
+
+      {board === 'layout' && metricsOpen && (
+        <div className="md:hidden">
+          <BottomSheet title="Métricas" onClose={() => setMetricsOpen(false)}>
+            <MetricsPanel />
           </BottomSheet>
         </div>
       )}

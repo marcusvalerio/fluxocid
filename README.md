@@ -108,7 +108,13 @@ npm run lint      # lint (oxlint)
 - [x] P7 — Visualizar o fluxo sobreposto ao Layout: toggle "Mostrar
       fluxo sobre o layout" desenha as conexões (cor/estilo por tipo)
       entre os objetos associados, somente leitura
-- [ ] P8 — Evoluir regras espaciais e métricas
+- [x] P8 — Evoluir regras espaciais e métricas: painel de Métricas
+      (área total/armazenagem/operacional/circulação, ocupação,
+      posições de pallet, contagem de equipamentos/docas/áreas,
+      comprimento de corredores, etapas de fluxo); empilhadeira,
+      paleteira e carrinho passam a registrar capacidade, raio de giro
+      e largura mínima de corredor (informativo, preparado para
+      validações automáticas futuras)
 - [ ] P9 — QA completo
 
 Fora do escopo desta etapa (aguardando instrução): Supabase,

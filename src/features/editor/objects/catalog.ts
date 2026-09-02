@@ -57,6 +57,16 @@ const EQUIPMENT_CODE_FIELD: PropertyFieldDefinition = {
   kind: 'text',
 }
 
+/** Mobile-equipment specs (P8 — "preparar propriedades para validações automáticas futuras",
+ * ver docs/BUSINESS_RULES.md § Regras espaciais). Purely informational for now — nothing reads
+ * these yet to block placement — but captured on the object so a future spatial-rules pass
+ * (raio de giro livre, corredor com largura mínima compatível) doesn't need a data migration. */
+const EQUIPMENT_SPEC_FIELDS: PropertyFieldDefinition[] = [
+  { key: 'capacityKg', label: 'Capacidade', kind: 'number-plain', unit: 'kg', min: 0, step: 50 },
+  { key: 'turningRadiusM', label: 'Raio de giro', kind: 'number-plain', unit: 'm', min: 0, step: 0.1 },
+  { key: 'minAisleWidthM', label: 'Largura mín. de corredor', kind: 'number-plain', unit: 'm', min: 0, step: 0.1 },
+]
+
 const LEVEL_OPTIONS = ['1', '2', '3', '4', '5', '6'].map((v) => ({ value: v, label: v }))
 
 const AREA_TYPE_OPTIONS = Object.entries(AREA_TYPE_LABELS).map(([value, label]) => ({ value, label }))
@@ -153,7 +163,7 @@ export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
     defaultLength: 230,
     resizable: false,
     render: Forklift,
-    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD],
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD, ...EQUIPMENT_SPEC_FIELDS],
   },
   'pallet-jack': {
     key: 'pallet-jack',
@@ -163,7 +173,7 @@ export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
     defaultLength: 150,
     resizable: false,
     render: PalletJack,
-    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD],
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD, ...EQUIPMENT_SPEC_FIELDS],
   },
   area: {
     key: 'area',
@@ -464,7 +474,7 @@ export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
     defaultLength: 120,
     resizable: false,
     render: PlatformCart,
-    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD],
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD, ...EQUIPMENT_SPEC_FIELDS],
   },
 }
 

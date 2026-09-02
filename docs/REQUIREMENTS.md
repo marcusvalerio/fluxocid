@@ -126,6 +126,13 @@ status (`DEFINIDO`, `PROPOSTO`).
 | RF-97 | Layout e Fluxo devem ser persistidos juntos, no mesmo projeto (mesmo layout salvo), e restaurados juntos ao reabrir. | MVP | DEFINIDO |
 | RF-98 | O usuário deve poder exibir/ocultar, sobre a Prancheta de Layout, as conexões de fluxo cujos dois extremos estejam associados a áreas/objetos do Layout — sem bloquear a edição do Layout. | P1 | DEFINIDO |
 
+### 1.10 Métricas e propriedades de equipamento (P8)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-99 | O sistema deve exibir um painel de métricas do projeto: área total, área de armazenagem, área operacional, área de circulação, ocupação, posições de pallet, quantidade de equipamentos, quantidade de docas, comprimento de corredores, quantidade de áreas e quantidade de etapas de fluxo. | P1 | DEFINIDO |
+| RF-100 | Empilhadeira, paleteira e carrinho de carga/plataforma devem permitir registrar capacidade (kg), raio de giro (m) e largura mínima de corredor (m) — informativo nesta fase, preparado para validações espaciais automáticas futuras. | P2 | DEFINIDO |
+
 ## 2. Requisitos não funcionais
 
 | ID | Descrição | Prioridade | Status |

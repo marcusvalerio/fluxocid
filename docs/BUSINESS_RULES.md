@@ -119,6 +119,14 @@
   associada ao tipo de equipamento que circula neles — regra a ser
   parametrizada quando uma fase de regras espaciais mais completa for
   priorizada.
+- BR-62 (P8, preparação): Empilhadeira, paleteira e carrinho de
+  carga/plataforma carregam capacidade (kg), raio de giro (m) e
+  largura mínima de corredor (m) como propriedades informativas
+  (`properties.capacityKg`/`turningRadiusM`/`minAisleWidthM`) — nenhuma
+  validação automática as usa ainda (ex.: bloquear equipamento em
+  corredor estreito demais); existem para não exigir migração de dados
+  quando essa validação for priorizada. Ver `EQUIPMENT_SPEC_FIELDS` em
+  `src/features/editor/objects/catalog.ts`.
 
 ## 8. Endereçamento e capacidade
 
