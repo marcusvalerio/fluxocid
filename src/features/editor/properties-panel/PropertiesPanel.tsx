@@ -44,7 +44,7 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
         </div>
       )}
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-text-primary">{def.label}</h2>
+        <h2 className="font-heading text-base font-semibold text-text-primary">{def.label}</h2>
         <div className="flex gap-1">
           <IconButton label="Girar -90°" onClick={() => rotateObject(object.id, -90)}>
             <RotateCcw size={18} />

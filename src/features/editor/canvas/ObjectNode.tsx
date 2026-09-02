@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { Group, Rect } from 'react-konva'
-import type Konva from 'konva'
+import Konva from 'konva'
 import { OBJECT_CATALOG } from '../objects/catalog'
 import { useEditorStore } from '../state/useEditorStore'
 import { cmToPx, pxToCm } from '../../../shared/lib/units'
@@ -195,7 +195,17 @@ export function ObjectNode({
 
   return (
     <Group
-      ref={(node) => registerRef(obj.id, node)}
+      ref={(node) => {
+        registerRef(obj.id, node)
+        // A quick scale/opacity pop on mount — the "objeto inserido" microinteraction. The ref
+        // callback only fires once per mount (obj.id is a stable React key), so this can't
+        // replay on ordinary re-renders (drag, property edits, etc).
+        if (node) {
+          node.scale({ x: 0.85, y: 0.85 })
+          node.opacity(0)
+          node.to({ scaleX: 1, scaleY: 1, opacity: 1, duration: 0.12, easing: Konva.Easings.EaseOut })
+        }
+      }}
       x={centerXPx}
       y={centerYPx}
       offsetX={widthPx / 2}
@@ -232,7 +242,7 @@ export function ObjectNode({
         />
       )}
       {selected && selectedCount > 1 && (
-        <Rect width={widthPx} height={lengthPx} stroke="#2563EB" strokeWidth={2} listening={false} />
+        <Rect width={widthPx} height={lengthPx} stroke="#0796D7" strokeWidth={2} listening={false} />
       )}
     </Group>
   )

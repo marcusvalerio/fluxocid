@@ -24,7 +24,7 @@ export function EnvironmentPanel() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-semibold text-text-primary">Ambiente</h2>
+      <h2 className="font-heading text-base font-semibold text-text-primary">Ambiente</h2>
 
       <div className="space-y-3">
         <NumberField

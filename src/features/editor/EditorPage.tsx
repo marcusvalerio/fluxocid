@@ -27,6 +27,7 @@ import { useEditorStore } from './state/useEditorStore'
 import { layoutRepository } from '../../shared/data/LocalLayoutRepository'
 import { findStorageOverlaps, getBoundsStatus } from '../../shared/lib/spatialRules'
 import { IconButton } from '../../shared/ui/IconButton'
+import { ThemeToggle } from '../../shared/ui/ThemeToggle'
 import { BottomSheet } from '../../shared/ui/BottomSheet'
 import type { ObjectTypeKey } from '../../types/layout'
 
@@ -37,6 +38,12 @@ export function EditorPage() {
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [environmentOpen, setEnvironmentOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  // Mobile properties sheet: starts collapsed on every new selection (so it never sits on top
+  // of a just-inserted/selected object, which appears at the viewport center) and is forced
+  // collapsed for the duration of any drag — it only re-expands when the user explicitly taps
+  // it. See docs/UX.md § 2.2 and the Fase 1 mobile touch-interception fix.
+  const [propertiesCollapsed, setPropertiesCollapsed] = useState(true)
+  const [canvasDragging, setCanvasDragging] = useState(false)
 
   const layoutName = useEditorStore((s) => s.layoutName)
   const objects = useEditorStore((s) => s.objects)
@@ -75,6 +82,19 @@ export function EditorPage() {
   const registerHandle = useCallback((handle: EditorCanvasHandle) => {
     canvasHandleRef.current = handle
   }, [])
+
+  // Reset the mobile properties sheet to collapsed on every new selection.
+  const selectedIdsKey = selectedIds.join(',')
+  useEffect(() => {
+    setPropertiesCollapsed(true)
+  }, [selectedIdsKey])
+
+  // A drag starting while the sheet happens to be expanded (the user opened it, then decided
+  // to drag the object) latches it collapsed — so it doesn't pop back open the instant the
+  // drag ends. It only comes back via an explicit tap (onToggleCollapsed).
+  useEffect(() => {
+    if (canvasDragging) setPropertiesCollapsed(true)
+  }, [canvasDragging])
 
   useEffect(() => {
     let cancelled = false
@@ -152,14 +172,15 @@ export function EditorPage() {
         <IconButton label="Voltar" onClick={() => navigate('/layouts')}>
           <ArrowLeft size={20} />
         </IconButton>
-        <h1 className="text-sm md:text-base font-semibold text-text-primary truncate flex-1">
+        <h1 className="font-display text-sm md:text-base font-semibold text-text-primary truncate flex-1">
           {layoutName || 'Layout'}
         </h1>
         <span
-          className={`text-xs shrink-0 ${saveStatus === 'error' ? 'text-danger' : 'text-text-secondary'}`}
+          className={`text-xs shrink-0 transition-colors duration-200 ${saveStatus === 'error' ? 'text-danger' : 'text-text-secondary'}`}
         >
           {saveStatusLabel[saveStatus]}
         </span>
+        <ThemeToggle />
       </header>
 
       <div className="flex-1 flex overflow-hidden relative">
@@ -168,7 +189,7 @@ export function EditorPage() {
         </aside>
 
         <main className="flex-1 relative">
-          <EditorCanvas registerHandle={registerHandle} />
+          <EditorCanvas registerHandle={registerHandle} onDraggingChange={setCanvasDragging} />
 
           <div className="absolute top-3 left-3 flex flex-col gap-1 bg-surface border border-border rounded-lg shadow-sm p-1">
             <IconButton label="Aumentar zoom" onClick={() => canvasHandleRef.current?.zoomIn()}>
@@ -214,19 +235,19 @@ export function EditorPage() {
           </div>
 
           {environmentOpen && (
-            <aside className="hidden md:block absolute bottom-3 right-3 w-72 bg-surface border border-border rounded-lg shadow-sm p-4">
+            <aside className="hidden md:block absolute bottom-3 right-3 w-72 bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
               <EnvironmentPanel />
             </aside>
           )}
 
           {selectedObject && (
-            <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4">
+            <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
               <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} boundsStatus={selectedBoundsStatus} />
             </aside>
           )}
 
           {hasMultiSelection && (
-            <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4">
+            <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
               <SelectionToolbar />
             </aside>
           )}
@@ -287,6 +308,8 @@ export function EditorPage() {
             title={selectedObject.name || 'Propriedades'}
             onClose={() => selectObject(null)}
             modal={false}
+            collapsed={propertiesCollapsed || canvasDragging}
+            onToggleCollapsed={() => setPropertiesCollapsed((v) => !v)}
           >
             <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} boundsStatus={selectedBoundsStatus} />
           </BottomSheet>

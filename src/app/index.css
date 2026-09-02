@@ -1,20 +1,78 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Sora:wght@400;500;600;700&display=swap");
+@import url("https://api.fontshare.com/v2/css?f[]=supreme@400,500,600&display=swap");
 @import "tailwindcss";
 
+/*
+ * Palette per docs/DESIGN_SYSTEM.md (Fase 1): "neutro por padrão, cor por significado" — the
+ * base neutrals (Authentic Black / White Sand / Cute Silver) carry the interface, the identity
+ * blues (Regal Blue / Smooth Blue / Endless Sky / Royal Light Blue) are reserved for interactive
+ * and meaningful accents so the UI never reads as "all blue". Light values live on :root;
+ * :root[data-theme="dark"] and the prefers-color-scheme fallback redefine the same custom
+ * properties — every consumer (Tailwind utility or plain var()) picks up the swap for free.
+ */
 @theme {
-  --color-bg: #f7f8fa;
-  --color-surface: #ffffff;
-  --color-surface-alt: #eef1f5;
-  --color-border: #dce0e6;
-  --color-text-primary: #1a1f27;
-  --color-text-secondary: #5b6472;
-  --color-text-disabled: #9aa2ad;
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
+  --color-bg: #ede9e3;
+  --color-surface: #f6f4f0;
+  --color-surface-alt: #e3e6eb;
+  --color-border: #d9d5cb;
+  --color-text-primary: #08080c;
+  --color-text-secondary: #4b4f58;
+  --color-text-disabled: #9a9ca3;
+  --color-primary: #0796d7;
+  --color-primary-hover: #024c7b;
+  --color-primary-subtle: #b8dcef;
+  --color-accent-deep: #03355e;
   --color-success: #16a34a;
   --color-warning: #d97706;
   --color-danger: #dc2626;
-  --font-sans: "Inter", system-ui, sans-serif;
+
+  --font-sans: "Sora", system-ui, sans-serif;
+  --font-display: "Familjen Grotesk", system-ui, sans-serif;
+  --font-heading: "Supreme", system-ui, sans-serif;
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #08080c;
+  --color-surface: #131319;
+  --color-surface-alt: #1b1d24;
+  --color-border: #2b2e37;
+  --color-text-primary: #ede9e3;
+  --color-text-secondary: #a7abb5;
+  --color-text-disabled: #6b6e76;
+  --color-primary: #0796d7;
+  --color-primary-hover: #48bdec;
+  --color-primary-subtle: #12293a;
+  --color-accent-deep: #b8dcef;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #f87171;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-bg: #08080c;
+    --color-surface: #131319;
+    --color-surface-alt: #1b1d24;
+    --color-border: #2b2e37;
+    --color-text-primary: #ede9e3;
+    --color-text-secondary: #a7abb5;
+    --color-text-disabled: #6b6e76;
+    --color-primary: #0796d7;
+    --color-primary-hover: #48bdec;
+    --color-primary-subtle: #12293a;
+    --color-accent-deep: #b8dcef;
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-danger: #f87171;
+  }
 }
 
 html,
@@ -28,4 +86,58 @@ body {
   font-family: var(--font-sans);
   background-color: var(--color-bg);
   color: var(--color-text-primary);
+  transition:
+    background-color 150ms var(--ease-standard),
+    color 150ms var(--ease-standard);
+}
+
+/* Subtle, short motion (docs/UX.md § Fase 1 "motion sutil") — never long or bouncy: panels
+ * settle in place, sheets rise from the edge they're anchored to, feedback just fades. */
+@keyframes fluxocit-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fluxocit-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fluxocit-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fluxocit-fade-in 150ms var(--ease-standard) both;
+}
+
+.animate-panel-in {
+  animation: fluxocit-panel-in 160ms var(--ease-standard) both;
+}
+
+.animate-sheet-in {
+  animation: fluxocit-sheet-in 220ms var(--ease-standard) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-panel-in,
+  .animate-sheet-in {
+    animation: none;
+  }
 }

@@ -36,9 +36,12 @@ export interface EditorCanvasHandle {
 
 interface EditorCanvasProps {
   registerHandle: (handle: EditorCanvasHandle) => void
+  /** Fires whenever any object starts/stops being dragged — lets the mobile properties sheet
+   * collapse out of the way for the duration of the gesture. See docs/UX.md § 2.2. */
+  onDraggingChange?: (dragging: boolean) => void
 }
 
-export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
+export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [marqueeRect, setMarqueeRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null)
@@ -446,7 +449,10 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
                     else nodesById.current.delete(id)
                   }}
                   onSnapGuideChange={setGuides}
-                  onDraggingChange={setIsDraggingObject}
+                  onDraggingChange={(dragging) => {
+                    setIsDraggingObject(dragging)
+                    onDraggingChange?.(dragging)
+                  }}
                 />
               ))}
             <SelectionTransformer nodesByIdRef={nodesById} pxPerMeter={scalePxPerMeter} />
@@ -465,9 +471,9 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
                 y={marqueeRect.y}
                 width={marqueeRect.width}
                 height={marqueeRect.height}
-                fill="#2563EB"
+                fill="#0796D7"
                 opacity={0.1}
-                stroke="#2563EB"
+                stroke="#0796D7"
                 strokeWidth={1 / camera.zoom}
                 listening={false}
               />

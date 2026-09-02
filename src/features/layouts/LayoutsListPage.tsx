@@ -6,6 +6,7 @@ import { DEFAULT_ENV_HEIGHT_M, DEFAULT_ENV_WIDTH_M } from '../editor/state/useEd
 import { Button } from '../../shared/ui/Button'
 import { Panel } from '../../shared/ui/Panel'
 import { IconButton } from '../../shared/ui/IconButton'
+import { ThemeToggle } from '../../shared/ui/ThemeToggle'
 import type { LayoutSummary } from '../../types/layout'
 
 export function LayoutsListPage() {
@@ -43,11 +44,14 @@ export function LayoutsListPage() {
     <div className="min-h-dvh bg-bg">
       <header className="border-b border-border bg-surface">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-text-primary">FluxoCit</h1>
-          <Button variant="primary" onClick={() => setCreating(true)}>
-            <Plus size={18} />
-            Novo layout
-          </Button>
+          <h1 className="font-display text-xl font-semibold text-text-primary">FluxoCit</h1>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="primary" onClick={() => setCreating(true)}>
+              <Plus size={18} />
+              Novo layout
+            </Button>
+          </div>
         </div>
       </header>
 

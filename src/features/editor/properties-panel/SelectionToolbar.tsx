@@ -29,7 +29,7 @@ export function SelectionToolbar() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-text-primary">{count} selecionados</h2>
+        <h2 className="font-heading text-base font-semibold text-text-primary">{count} selecionados</h2>
         <div className="flex gap-1">
           <IconButton label="Girar -90°" onClick={() => rotateSelected(-90)}>
             <RotateCcw size={18} />

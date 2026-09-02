@@ -77,9 +77,15 @@ npm run lint      # lint (oxlint)
       operação, fluxo, equipamentos — ver "Biblioteca de objetos"
       abaixo), exportação do layout como imagem PNG preservando escala
       e composição do ambiente
-- [ ] Fase 1 — Design system + refinamento visual (temas claro/escuro,
-      tipografia, motion, correção definitiva do painel de propriedades
-      no mobile)
+- [x] Fase 1 — Design system + refinamento visual: paleta de marca
+      (Authentic Black/White Sand/Cute Silver + Regal/Smooth/Endless/
+      Royal Light Blue) e tipografia (Familjen Grotesk/Supreme/Sora)
+      como tokens claro/escuro persistidos localmente, canvas
+      (ambiente/grid/seleção) adaptado à nova paleta em ambos os temas,
+      motion sutil (painéis, sheets, botões, inserção de objeto),
+      correção definitiva do painel de propriedades no mobile
+      (recolhe sob toque no canvas, nunca reabre sozinho, X nunca
+      exclui)
 
 Fora do escopo desta etapa (aguardando instrução): Supabase,
 autenticação, backend, banco de dados em nuvem, editor 3D, deploy

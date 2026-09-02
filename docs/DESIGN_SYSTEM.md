@@ -24,27 +24,37 @@ Princípios:
 
 ### 2.1 Paleta de interface (chrome)
 
-| Token | Valor (light) | Uso |
-|-------|---------------|-----|
-| `--color-bg` | `#F7F8FA` | Fundo geral da aplicação. |
-| `--color-surface` | `#FFFFFF` | Painéis, cards, barra superior. |
-| `--color-surface-alt` | `#EEF1F5` | Fundo do canvas (fora dos limites do layout). |
-| `--color-border` | `#DCE0E6` | Bordas de painéis, divisores. |
-| `--color-text-primary` | `#1A1F27` | Texto principal. |
-| `--color-text-secondary` | `#5B6472` | Texto secundário/legendas. |
-| `--color-text-disabled` | `#9AA2AD` | Texto/ícones desabilitados. |
-| `--color-primary` | `#2563EB` | Ação primária, seleção, foco. |
-| `--color-primary-hover` | `#1D4ED8` | Hover/active do primário. |
-| `--color-success` | `#16A34A` | Confirmações, "salvo". |
-| `--color-warning` | `#D97706` | Avisos (ex.: conflito espacial futuro). |
-| `--color-danger` | `#DC2626` | Exclusão, erros. |
+Paleta de marca (Fase 1): neutros de base — **Authentic Black**
+`#08080C`, **White Sand** `#EDE9E3`, **Cute Silver** `#E3E6EB` — e cores
+de identidade/interação — **Regal Blue** `#03355E`, **Smooth Blue**
+`#0796D7`, **Endless Sky** `#024C7B`, **Royal Light Blue** `#B8DCEF`.
+Princípio: **neutro por padrão, cor por significado** — o branco puro
+(`#FFFFFF`) nunca é a superfície principal, e o azul de identidade é
+reservado para ações/seleção/foco, nunca dominando a interface inteira.
 
-Modo escuro (`--color-bg: #0F1115`, `--color-surface: #171A21`,
-`--color-border: #262B33`, `--color-text-primary: #E8EAED`, demais
-tokens ajustados para contraste ≥ 4.5:1) é uma extensão planejada,
-implementada quando o design system estiver estável — o token system
-acima já é preparado para isso (variáveis, não valores fixos no código
-de componentes).
+| Token | Light | Dark | Uso |
+|-------|-------|------|-----|
+| `--color-bg` | `#EDE9E3` (White Sand) | `#08080C` (Authentic Black) | Fundo geral da aplicação. |
+| `--color-surface` | `#F6F4F0` | `#131319` | Painéis, cards, barra superior. |
+| `--color-surface-alt` | `#E3E6EB` (Cute Silver) | `#1B1D24` | Fundo do canvas fora dos limites do ambiente, superfícies elevadas. |
+| `--color-border` | `#D9D5CB` | `#2B2E37` | Bordas de painéis, divisores. |
+| `--color-text-primary` | `#08080C` (Authentic Black) | `#EDE9E3` (White Sand) | Texto principal. |
+| `--color-text-secondary` | `#4B4F58` | `#A7ABB5` | Texto secundário/legendas. |
+| `--color-text-disabled` | `#9A9CA3` | `#6B6E76` | Texto/ícones desabilitados. |
+| `--color-primary` | `#0796D7` (Smooth Blue) | `#0796D7` (Smooth Blue) | Ação primária, seleção, foco. |
+| `--color-primary-hover` | `#024C7B` (Endless Sky) | `#48BDEC` | Hover/active do primário — escurece no claro, clareia no escuro (mantém contraste contra o fundo). |
+| `--color-primary-subtle` | `#B8DCEF` (Royal Light Blue) | `#12293A` | Fundos sutis/badges relacionados à ação primária. |
+| `--color-accent-deep` | `#03355E` (Regal Blue) | `#B8DCEF` (Royal Light Blue) | Acento reservado a ênfases pontuais (não usado em áreas grandes de UI). |
+| `--color-success` | `#16A34A` | `#22C55E` | Confirmações, "salvo". |
+| `--color-warning` | `#D97706` | `#F59E0B` | Avisos (objeto fora do ambiente, zona de segurança). |
+| `--color-danger` | `#DC2626` | `#F87171` | Exclusão, erros, sobreposição de armazenagem. |
+
+Os dois temas são implementados via as mesmas variáveis CSS
+redefinidas em `:root[data-theme="dark"]` (seleção explícita,
+persistida em `localStorage`) e em `prefers-color-scheme: dark`
+(fallback do sistema) — nenhum componente lê um valor de cor fixo,
+todos consomem os tokens. Ver `src/app/index.css` e
+`src/shared/state/useThemeStore.ts`.
 
 ### 2.2 Cores por categoria de objeto (canvas)
 
@@ -81,9 +91,20 @@ visualmente com objetos sólidos por cima delas:
 
 ## 3. Tipografia
 
-- Fonte: **Inter** (via `fonts.googleapis.com`), fallback
-  `system-ui, sans-serif` — legível em telas pequenas, boa para
-  números (painel de propriedades usa muitos valores numéricos).
+Três famílias, cada uma com um papel fixo — não substituíveis
+arbitrariamente:
+
+| Token | Fonte | Uso |
+|-------|-------|-----|
+| `--font-display` (`font-display`) | **Familjen Grotesk** (via `fonts.googleapis.com`) | Títulos principais (nome do layout no cabeçalho, título da lista de layouts). |
+| `--font-heading` (`font-heading`) | **Supreme** (via `api.fontshare.com`) | Títulos secundários e rótulos de seção (título de painel, título de bottom sheet, cabeçalho de propriedades do objeto). |
+| `--font-sans` (padrão do `body`) | **Sora** (via `fonts.googleapis.com`) | Texto de UI e corpo — labels, botões, inputs, listas. |
+
+Todas com fallback `system-ui, sans-serif`. `Sora` é a fonte padrão do
+`<body>`, então qualquer texto sem classe explícita já usa a fonte
+correta — `font-display`/`font-heading` são aplicadas pontualmente aos
+títulos listados acima.
+
 - Escala (mobile-first, cresce em telas maiores via classes
   responsivas do Tailwind):
 

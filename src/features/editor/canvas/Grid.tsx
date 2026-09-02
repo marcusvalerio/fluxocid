@@ -1,5 +1,6 @@
 import { Group, Line } from 'react-konva'
 import { cmToPx } from '../../../shared/lib/units'
+import { useIsDarkMode } from '../../../shared/lib/useIsDarkMode'
 
 interface GridProps {
   pxPerMeter: number
@@ -13,7 +14,14 @@ interface GridProps {
 
 const MAJOR_STEP_M = 1
 
+/** Kept deliberately faint (low opacity, not just a light color) so the environment floor and
+ * the objects on it stay the visual focus — the grid is a measuring aid, not the subject. */
+const GRID_COLOR_LIGHT = '#4B4F58'
+const GRID_COLOR_DARK = '#8B8FA0'
+const GRID_OPACITY = 0.12
+
 export function Grid({ pxPerMeter, camera, stageWidth, stageHeight, envWidthPx, envHeightPx }: GridProps) {
+  const gridColor = useIsDarkMode() ? GRID_COLOR_DARK : GRID_COLOR_LIGHT
   const majorStepPx = cmToPx(MAJOR_STEP_M * 100, pxPerMeter)
 
   const rawLeft = -camera.x / camera.zoom
@@ -37,13 +45,25 @@ export function Grid({ pxPerMeter, camera, stageWidth, stageHeight, envWidthPx, 
   for (let col = startCol; col <= endCol; col++) {
     const x = col * majorStepPx
     lines.push(
-      <Line key={`v${col}`} points={[x, 0, x, envHeightPx]} stroke="#DCE0E6" strokeWidth={1 / camera.zoom} />,
+      <Line
+        key={`v${col}`}
+        points={[x, 0, x, envHeightPx]}
+        stroke={gridColor}
+        opacity={GRID_OPACITY}
+        strokeWidth={1 / camera.zoom}
+      />,
     )
   }
   for (let row = startRow; row <= endRow; row++) {
     const y = row * majorStepPx
     lines.push(
-      <Line key={`h${row}`} points={[0, y, envWidthPx, y]} stroke="#DCE0E6" strokeWidth={1 / camera.zoom} />,
+      <Line
+        key={`h${row}`}
+        points={[0, y, envWidthPx, y]}
+        stroke={gridColor}
+        opacity={GRID_OPACITY}
+        strokeWidth={1 / camera.zoom}
+      />,
     )
   }
 
