@@ -10,9 +10,13 @@ export type DistributeAxis = 'x' | 'y'
 
 const MAX_HISTORY = 100
 
+/** Fallback environment size (m) for layouts created before this feature, or with invalid dims. */
+export const DEFAULT_ENV_WIDTH_M = 20
+export const DEFAULT_ENV_HEIGHT_M = 15
+
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
-interface Camera {
+export interface Camera {
   x: number
   y: number
   zoom: number
@@ -23,6 +27,9 @@ interface EditorState {
   layoutName: string
   scalePxPerMeter: number
   gridStepM: number
+  /** Physical dimensions (m) of the space being planned — see docs/BUSINESS_RULES.md § Ambiente. */
+  envWidthM: number
+  envHeightM: number
   objects: LayoutObject[]
   selectedIds: string[]
   camera: Camera
@@ -34,6 +41,7 @@ interface EditorState {
   history: { past: LayoutObject[][]; future: LayoutObject[][] }
 
   loadLayout: (layout: Layout) => void
+  setEnvironmentSize: (widthM: number, heightM: number) => void
   addObject: (objectType: ObjectTypeKey, worldXCm: number, worldYCm: number) => void
   moveObjectLive: (id: string, xCm: number, yCm: number) => void
   commitObject: (id: string, patch: Partial<LayoutObject>) => void
@@ -69,6 +77,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   layoutName: '',
   scalePxPerMeter: 50,
   gridStepM: 0.1,
+  envWidthM: DEFAULT_ENV_WIDTH_M,
+  envHeightM: DEFAULT_ENV_HEIGHT_M,
   objects: [],
   selectedIds: [],
   camera: { x: 0, y: 0, zoom: 1 },
@@ -84,10 +94,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       layoutName: layout.name,
       scalePxPerMeter: layout.scalePxPerMeter,
       gridStepM: layout.gridStepM,
+      envWidthM: layout.widthM && layout.widthM > 0 ? layout.widthM : DEFAULT_ENV_WIDTH_M,
+      envHeightM: layout.heightM && layout.heightM > 0 ? layout.heightM : DEFAULT_ENV_HEIGHT_M,
       objects: layout.objects,
       selectedIds: [],
       history: { past: [], future: [] },
       saveStatus: 'idle',
+    }),
+
+  setEnvironmentSize: (widthM, heightM) =>
+    set({
+      envWidthM: Math.max(1, widthM),
+      envHeightM: Math.max(1, heightM),
     }),
 
   addObject: (objectType, worldXCm, worldYCm) => {

@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LayoutGrid, Plus, Trash2 } from 'lucide-react'
 import { layoutRepository } from '../../shared/data/LocalLayoutRepository'
+import { DEFAULT_ENV_HEIGHT_M, DEFAULT_ENV_WIDTH_M } from '../editor/state/useEditorStore'
 import { Button } from '../../shared/ui/Button'
 import { Panel } from '../../shared/ui/Panel'
 import { IconButton } from '../../shared/ui/IconButton'
+import { ThemeToggle } from '../../shared/ui/ThemeToggle'
 import type { LayoutSummary } from '../../types/layout'
 
 export function LayoutsListPage() {
@@ -13,6 +15,8 @@ export function LayoutsListPage() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
+  const [newWidthM, setNewWidthM] = useState(String(DEFAULT_ENV_WIDTH_M))
+  const [newHeightM, setNewHeightM] = useState(String(DEFAULT_ENV_HEIGHT_M))
 
   async function refresh() {
     setLayouts(await layoutRepository.listLayouts())
@@ -25,7 +29,9 @@ export function LayoutsListPage() {
 
   async function handleCreate() {
     const name = newName.trim() || 'Novo layout'
-    const layout = await layoutRepository.createLayout({ name })
+    const widthM = Math.max(1, Number.parseFloat(newWidthM.replace(',', '.')) || DEFAULT_ENV_WIDTH_M)
+    const heightM = Math.max(1, Number.parseFloat(newHeightM.replace(',', '.')) || DEFAULT_ENV_HEIGHT_M)
+    const layout = await layoutRepository.createLayout({ name, widthM, heightM })
     navigate(`/editor/${layout.id}`)
   }
 
@@ -38,11 +44,14 @@ export function LayoutsListPage() {
     <div className="min-h-dvh bg-bg">
       <header className="border-b border-border bg-surface">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-text-primary">FluxoCit</h1>
-          <Button variant="primary" onClick={() => setCreating(true)}>
-            <Plus size={18} />
-            Novo layout
-          </Button>
+          <h1 className="font-display text-xl font-semibold text-text-primary">FluxoCit</h1>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="primary" onClick={() => setCreating(true)}>
+              <Plus size={18} />
+              Novo layout
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -50,16 +59,41 @@ export function LayoutsListPage() {
         {creating && (
           <Panel className="p-4 mb-4">
             <label className="block text-sm font-medium text-text-secondary mb-2">Nome do layout</label>
-            <div className="flex gap-2">
+            <input
+              autoFocus
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              placeholder="Ex.: CD São Paulo — Galpão 1"
+              className="w-full rounded-md border border-border px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary/40 mb-3"
+            />
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Dimensões do ambiente (largura × comprimento, em metros)
+            </label>
+            <div className="flex items-center gap-2 mb-3">
               <input
-                autoFocus
                 type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                inputMode="decimal"
+                value={newWidthM}
+                onChange={(e) => setNewWidthM(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                placeholder="Ex.: CD São Paulo — Galpão 1"
-                className="flex-1 rounded-md border border-border px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary/40"
+                aria-label="Largura do ambiente em metros"
+                className="w-24 rounded-md border border-border px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
+              <span className="text-text-secondary">m ×</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={newHeightM}
+                onChange={(e) => setNewHeightM(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                aria-label="Comprimento do ambiente em metros"
+                className="w-24 rounded-md border border-border px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+              <span className="text-text-secondary">m</span>
+            </div>
+            <div className="flex gap-2">
               <Button variant="primary" onClick={handleCreate}>
                 Criar
               </Button>

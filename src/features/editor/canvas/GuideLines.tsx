@@ -19,7 +19,7 @@ interface GuideLinesProps {
   stageHeight: number
 }
 
-const GUIDE_COLOR = '#2563EB'
+const GUIDE_COLOR = '#0796D7'
 
 export function GuideLines({ guides, pxPerMeter, camera, stageWidth, stageHeight }: GuideLinesProps) {
   if (!guides) return null
@@ -53,7 +53,7 @@ export function GuideLines({ guides, pxPerMeter, camera, stageWidth, stageHeight
         />
       )}
       <Label x={readoutXPx} y={readoutYPx - 34 / camera.zoom} listening={false} scaleX={1 / camera.zoom} scaleY={1 / camera.zoom}>
-        <Tag fill="#1A1F27" cornerRadius={4} opacity={0.85} />
+        <Tag fill="#08080C" cornerRadius={4} opacity={0.85} />
         <Text
           text={`X: ${formatMeters(guides.readoutXCm)} m   Y: ${formatMeters(guides.readoutYCm)} m`}
           fill="#FFFFFF"

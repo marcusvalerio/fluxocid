@@ -88,9 +88,9 @@ export function SelectionTransformer({ nodesByIdRef, pxPerMeter }: SelectionTran
       rotationSnapTolerance={6}
       anchorSize={16}
       anchorCornerRadius={8}
-      anchorStroke="#2563EB"
+      anchorStroke="#0796D7"
       anchorFill="#FFFFFF"
-      borderStroke="#2563EB"
+      borderStroke="#0796D7"
       borderStrokeWidth={2}
       keepRatio={false}
       boundBoxFunc={(oldBox, newBox) => {

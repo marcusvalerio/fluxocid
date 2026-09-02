@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Check,
   Copy,
+  Download,
   Grid3x3,
   Magnet,
   Minus,
@@ -15,15 +16,18 @@ import {
   Trash2,
   Undo2,
   Maximize,
+  Warehouse,
 } from 'lucide-react'
 import { EditorCanvas, type EditorCanvasHandle } from './canvas/EditorCanvas'
+import { EnvironmentPanel } from './environment-panel/EnvironmentPanel'
 import { LibraryPanel } from './library-panel/LibraryPanel'
 import { PropertiesPanel } from './properties-panel/PropertiesPanel'
 import { SelectionToolbar } from './properties-panel/SelectionToolbar'
 import { useEditorStore } from './state/useEditorStore'
 import { layoutRepository } from '../../shared/data/LocalLayoutRepository'
-import { findStorageOverlaps } from '../../shared/lib/spatialRules'
+import { findStorageOverlaps, getBoundsStatus } from '../../shared/lib/spatialRules'
 import { IconButton } from '../../shared/ui/IconButton'
+import { ThemeToggle } from '../../shared/ui/ThemeToggle'
 import { BottomSheet } from '../../shared/ui/BottomSheet'
 import type { ObjectTypeKey } from '../../types/layout'
 
@@ -31,11 +35,15 @@ export function EditorPage() {
   const { layoutId } = useParams<{ layoutId: string }>()
   const navigate = useNavigate()
   const canvasHandleRef = useRef<EditorCanvasHandle | null>(null)
-  const editorMainRef = useRef<HTMLElement>(null)
-  const suppressNextPropertiesOpenRef = useRef(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
-  const [propertiesOpen, setPropertiesOpen] = useState(false)
+  const [environmentOpen, setEnvironmentOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  // Mobile properties sheet: starts collapsed on every new selection (so it never sits on top
+  // of a just-inserted/selected object, which appears at the viewport center) and is forced
+  // collapsed for the duration of any drag — it only re-expands when the user explicitly taps
+  // it. See docs/UX.md § 2.2 and the Fase 1 mobile touch-interception fix.
+  const [propertiesCollapsed, setPropertiesCollapsed] = useState(true)
+  const [canvasDragging, setCanvasDragging] = useState(false)
 
   const layoutName = useEditorStore((s) => s.layoutName)
   const objects = useEditorStore((s) => s.objects)
@@ -61,13 +69,32 @@ export function EditorPage() {
   const setSaveStatus = useEditorStore((s) => s.setSaveStatus)
   const layoutId2 = useEditorStore((s) => s.layoutId)
 
+  const envWidthM = useEditorStore((s) => s.envWidthM)
+  const envHeightM = useEditorStore((s) => s.envHeightM)
+
   const selectedObject = selectedIds.length === 1 ? objects.find((o) => o.id === selectedIds[0]) : undefined
   const hasMultiSelection = selectedIds.length > 1
   const overlappingIds = useMemo(() => findStorageOverlaps(objects), [objects])
+  const selectedBoundsStatus = selectedObject
+    ? getBoundsStatus(selectedObject, envWidthM * 100, envHeightM * 100)
+    : undefined
 
   const registerHandle = useCallback((handle: EditorCanvasHandle) => {
     canvasHandleRef.current = handle
   }, [])
+
+  // Reset the mobile properties sheet to collapsed on every new selection.
+  const selectedIdsKey = selectedIds.join(',')
+  useEffect(() => {
+    setPropertiesCollapsed(true)
+  }, [selectedIdsKey])
+
+  // A drag starting while the sheet happens to be expanded (the user opened it, then decided
+  // to drag the object) latches it collapsed — so it doesn't pop back open the instant the
+  // drag ends. It only comes back via an explicit tap (onToggleCollapsed).
+  useEffect(() => {
+    if (canvasDragging) setPropertiesCollapsed(true)
+  }, [canvasDragging])
 
   useEffect(() => {
     let cancelled = false
@@ -84,40 +111,6 @@ export function EditorPage() {
       cancelled = true
     }
   }, [layoutId, loadLayout])
-
-  // A single selection opens the mobile properties sheet as before. When the selection changes
-  // because the user started dragging from the canvas, the sheet stays closed for that gesture.
-  useEffect(() => {
-    if (selectedObject) {
-      if (suppressNextPropertiesOpenRef.current) {
-        suppressNextPropertiesOpenRef.current = false
-        return
-      }
-      setPropertiesOpen(true)
-    } else {
-      setPropertiesOpen(false)
-    }
-  }, [selectedObject?.id])
-
-  // On mobile, a touch/press that starts on the canvas dismisses the properties sheet immediately
-  // and lets the same gesture continue into Konva. Selection is preserved during the drag.
-  useEffect(() => {
-    function handleCanvasInteraction(event: PointerEvent) {
-      if (!propertiesOpen || !editorMainRef.current) return
-      if (window.matchMedia('(min-width: 768px)').matches) return
-      const target = event.target as Element | null
-      if (!target || !target.closest('canvas')) return
-
-      suppressNextPropertiesOpenRef.current = true
-      setPropertiesOpen(false)
-      window.setTimeout(() => {
-        suppressNextPropertiesOpenRef.current = false
-      }, 0)
-    }
-
-    document.addEventListener('pointerdown', handleCanvasInteraction, true)
-    return () => document.removeEventListener('pointerdown', handleCanvasInteraction, true)
-  }, [propertiesOpen])
 
   // Autosave (debounced) on every committed change (undo history entry) after the initial load —
   // not on every live-drag frame, which changes `objects` without touching history.
@@ -179,14 +172,15 @@ export function EditorPage() {
         <IconButton label="Voltar" onClick={() => navigate('/layouts')}>
           <ArrowLeft size={20} />
         </IconButton>
-        <h1 className="text-sm md:text-base font-semibold text-text-primary truncate flex-1">
+        <h1 className="font-display text-sm md:text-base font-semibold text-text-primary truncate flex-1">
           {layoutName || 'Layout'}
         </h1>
         <span
-          className={`text-xs shrink-0 ${saveStatus === 'error' ? 'text-danger' : 'text-text-secondary'}`}
+          className={`text-xs shrink-0 transition-colors duration-200 ${saveStatus === 'error' ? 'text-danger' : 'text-text-secondary'}`}
         >
           {saveStatusLabel[saveStatus]}
         </span>
+        <ThemeToggle />
       </header>
 
       <div className="flex-1 flex overflow-hidden relative">
@@ -194,8 +188,8 @@ export function EditorPage() {
           <LibraryPanel onInsert={handleInsert} />
         </aside>
 
-        <main ref={editorMainRef} className="flex-1 relative">
-          <EditorCanvas registerHandle={registerHandle} />
+        <main className="flex-1 relative">
+          <EditorCanvas registerHandle={registerHandle} onDraggingChange={setCanvasDragging} />
 
           <div className="absolute top-3 left-3 flex flex-col gap-1 bg-surface border border-border rounded-lg shadow-sm p-1">
             <IconButton label="Aumentar zoom" onClick={() => canvasHandleRef.current?.zoomIn()}>
@@ -225,16 +219,35 @@ export function EditorPage() {
             <IconButton label="Alternar snap" active={snapEnabled} onClick={() => setSnapEnabled(!snapEnabled)}>
               <Magnet size={18} />
             </IconButton>
+            <IconButton
+              label="Configurar ambiente"
+              active={environmentOpen}
+              onClick={() => {
+                selectObject(null)
+                setEnvironmentOpen((v) => !v)
+              }}
+            >
+              <Warehouse size={18} />
+            </IconButton>
+            <IconButton label="Exportar como imagem (PNG)" onClick={() => canvasHandleRef.current?.exportPng()}>
+              <Download size={18} />
+            </IconButton>
           </div>
 
+          {environmentOpen && (
+            <aside className="hidden md:block absolute bottom-3 right-3 w-72 bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
+              <EnvironmentPanel />
+            </aside>
+          )}
+
           {selectedObject && (
-            <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4">
-              <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} />
+            <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
+              <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} boundsStatus={selectedBoundsStatus} />
             </aside>
           )}
 
           {hasMultiSelection && (
-            <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4">
+            <aside className="hidden md:block absolute top-3 right-16 w-72 bg-surface border border-border rounded-lg shadow-sm p-4 animate-panel-in">
               <SelectionToolbar />
             </aside>
           )}
@@ -289,17 +302,16 @@ export function EditorPage() {
         </BottomSheet>
       )}
 
-      {selectedObject && propertiesOpen && (
+      {selectedObject && (
         <div className="md:hidden">
           <BottomSheet
             title={selectedObject.name || 'Propriedades'}
-            onClose={() => {
-              setPropertiesOpen(false)
-              selectObject(null)
-            }}
+            onClose={() => selectObject(null)}
             modal={false}
+            collapsed={propertiesCollapsed || canvasDragging}
+            onToggleCollapsed={() => setPropertiesCollapsed((v) => !v)}
           >
-            <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} />
+            <PropertiesPanel object={selectedObject} hasOverlap={overlappingIds.has(selectedObject.id)} boundsStatus={selectedBoundsStatus} />
           </BottomSheet>
         </div>
       )}
@@ -308,6 +320,14 @@ export function EditorPage() {
         <div className="md:hidden">
           <BottomSheet title="Seleção múltipla" onClose={() => selectObject(null)} modal={false}>
             <SelectionToolbar />
+          </BottomSheet>
+        </div>
+      )}
+
+      {environmentOpen && (
+        <div className="md:hidden">
+          <BottomSheet title="Ambiente" onClose={() => setEnvironmentOpen(false)}>
+            <EnvironmentPanel />
           </BottomSheet>
         </div>
       )}

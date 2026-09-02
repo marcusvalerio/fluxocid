@@ -77,6 +77,15 @@ export class LocalLayoutRepository implements LayoutRepository {
     layout.updatedAt = new Date().toISOString()
     writeAll(layouts)
   }
+
+  async updateLayoutSettings(id: string, settings: Partial<Pick<Layout, 'widthM' | 'heightM'>>): Promise<void> {
+    const layouts = readAll()
+    const layout = layouts.find((l) => l.id === id)
+    if (!layout) return
+    Object.assign(layout, settings)
+    layout.updatedAt = new Date().toISOString()
+    writeAll(layouts)
+  }
 }
 
 export const layoutRepository: LayoutRepository = new LocalLayoutRepository()

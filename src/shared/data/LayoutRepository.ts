@@ -12,4 +12,6 @@ export interface LayoutRepository {
   renameLayout(id: string, name: string): Promise<void>
   deleteLayout(id: string): Promise<void>
   saveLayoutObjects(id: string, objects: LayoutObject[]): Promise<void>
+  /** Updates layout-level settings (environment size, scale, grid step) — not the object list. */
+  updateLayoutSettings(id: string, settings: Partial<Pick<Layout, 'widthM' | 'heightM'>>): Promise<void>
 }

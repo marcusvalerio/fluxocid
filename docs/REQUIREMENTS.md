@@ -6,6 +6,19 @@ status (`DEFINIDO`, `PROPOSTO`).
 
 ## 1. Requisitos funcionais
 
+### 1.0 Ambiente (espaço físico real)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-00a | O usuário deve poder definir largura e comprimento reais (m) do ambiente ao criar um layout. | MVP | DEFINIDO |
+| RF-00b | O usuário deve poder editar as dimensões do ambiente depois de criado. | MVP | DEFINIDO |
+| RF-00c | O canvas deve exibir o ambiente como uma área distinta (piso) do espaço "fora" dele, com grid restrito aos seus limites. | MVP | DEFINIDO |
+| RF-00d | O canvas deve exibir réguas com marcação em metros nas bordas superior e esquerda, acompanhando pan e zoom. | MVP | DEFINIDO |
+| RF-00e | O usuário deve ter um comando para enquadrar o ambiente inteiro na tela. | MVP | DEFINIDO |
+| RF-00f | O sistema deve sinalizar visualmente quando um objeto está parcial ou totalmente fora do ambiente, sem bloquear a ação. | MVP | DEFINIDO |
+| RF-00g | O snapping deve considerar as bordas do ambiente como alvo, além de outros objetos e da grade. | P1 | DEFINIDO |
+| RF-00h | O sistema deve exibir a área total do ambiente e uma estimativa de ocupação. | P1 | DEFINIDO |
+
 ### 1.1 Autenticação e conta
 
 | ID | Descrição | Prioridade | Status |
@@ -87,6 +100,16 @@ status (`DEFINIDO`, `PROPOSTO`).
 | RF-73 | O sistema deve computar e exibir a área ocupada (m²) de um objeto do tipo "área". | P1 | DEFINIDO |
 | RF-74 | Empilhadeiras e paleteiras devem permitir um código de identificação/patrimônio, independente do nome livre do objeto. | P1 | DEFINIDO |
 | RF-75 | O sistema deve sinalizar visualmente quando dois porta-paletes/corredores se sobrepõem, sem bloquear a edição — ver `docs/BUSINESS_RULES.md` BR-60. | P1 | DEFINIDO |
+| RF-76 | O usuário deve poder exportar o layout atual como imagem (PNG), preservando a escala e a composição do ambiente (piso, grid, objetos), sem os elementos de edição (seleção, transformer, guias, réguas). | P1 | DEFINIDO |
+
+### 1.8 Biblioteca logística ampliada (Fase 3)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-80 | A biblioteca deve incluir os seguintes objetos de armazenagem, cada um com representação visual própria: estante, bloco de armazenagem, área de picking, área de staging. | P1 | DEFINIDO |
+| RF-81 | A biblioteca deve incluir os seguintes objetos de operação, cada um com representação visual própria: esteira transportadora, bancada de separação, mesa de packing, balança, impressora/estação de etiquetas, scanner/RF, área de conferência, área de expedição, área de recebimento. | P1 | DEFINIDO |
+| RF-82 | A biblioteca deve incluir os seguintes objetos de fluxo, cada um com representação visual própria: seta direcional, faixa de circulação, cruzamento, zona de segurança, faixa de pedestres. | P1 | DEFINIDO |
+| RF-83 | A biblioteca deve incluir um objeto de equipamento "carrinho de carga/plataforma", com representação visual própria. | P1 | DEFINIDO |
 
 ## 2. Requisitos não funcionais
 

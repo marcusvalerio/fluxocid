@@ -34,3 +34,36 @@ export function findStorageOverlaps(objects: LayoutObject[]): Set<string> {
 
   return overlapping
 }
+
+export type BoundsStatus = 'inside' | 'partial' | 'outside'
+
+/**
+ * Whether an object's bounding box (rotation-aware) sits fully inside the environment, straddles
+ * its edge, or is entirely off it. Used to warn the user without blocking the placement — objects
+ * can legitimately be mid-drag or awaiting a bigger environment.
+ */
+export function getBoundsStatus(obj: LayoutObject, envWidthCm: number, envHeightCm: number): BoundsStatus {
+  const box = getBoundingBox(obj)
+  const fullyOutside = box.maxX <= 0 || box.minX >= envWidthCm || box.maxY <= 0 || box.minY >= envHeightCm
+  if (fullyOutside) return 'outside'
+  const fullyInside = box.minX >= 0 && box.maxX <= envWidthCm && box.minY >= 0 && box.maxY <= envHeightCm
+  return fullyInside ? 'inside' : 'partial'
+}
+
+/** Footprint categories counted toward occupancy — zones (area) and routes (flow) are markers,
+ * not physical footprint, so they're excluded. */
+const OCCUPANCY_CATEGORIES = new Set(['structure', 'storage', 'equipment', 'pallet'])
+
+/**
+ * Approximate percentage of the environment's floor area covered by solid objects (bounding
+ * box sum — objects that overlap, e.g. a pallet inside a rack, are double-counted, so this is
+ * a directional estimate rather than an exact figure). Returns 0 for an environment with no area.
+ */
+export function computeOccupancyPercent(objects: LayoutObject[], envWidthCm: number, envHeightCm: number): number {
+  const envArea = envWidthCm * envHeightCm
+  if (envArea <= 0) return 0
+  const occupiedArea = objects
+    .filter((o) => OCCUPANCY_CATEGORIES.has(o.category))
+    .reduce((sum, o) => sum + o.width * o.length, 0)
+  return (occupiedArea / envArea) * 100
+}

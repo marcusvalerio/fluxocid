@@ -1,5 +1,25 @@
 # FluxoCit — Regras de Negócio
 
+## 0. Ambiente (espaço físico real)
+
+- BR-00: Todo layout tem um **ambiente** — largura e comprimento reais
+  em metros, definidos na criação e editáveis depois. Layouts criados
+  antes desta regra existir (sem dimensões salvas) usam um ambiente
+  padrão de 20 × 15 m até o usuário configurar o real.
+- BR-01b: O ambiente é a referência visual principal do canvas — um
+  piso branco delimitado por borda, com grid restrito aos seus limites
+  (fora do ambiente não há grid, reforçando "isto não é meu espaço").
+- BR-02b: Objetos podem ser posicionados fora do ambiente ou
+  parcialmente fora dele — isso nunca é bloqueado — mas o sistema
+  sinaliza visualmente (contorno tracejado âmbar no objeto + aviso no
+  painel de propriedades) quando isso acontece.
+- BR-03b: A ocupação exibida no painel do ambiente é uma **estimativa**
+  (soma de área ocupada por objetos de estrutura/armazenagem/
+  equipamento/pallet, dividida pela área do ambiente) — objetos
+  sobrepostos (ex.: pallet sobre porta-paletes) são contados mais de
+  uma vez, então o número é direcional, não uma medida de ocupação real
+  livre de sobreposição.
+
 ## 1. Escala e unidades
 
 - BR-01: Toda dimensão física (posição, comprimento, largura) é

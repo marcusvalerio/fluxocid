@@ -56,7 +56,16 @@ irreversíveis fora do canvas (excluir layout inteiro).
   horizontais roláveis.
 - **Propriedades** abrem como *bottom sheet* menor ao selecionar um
   objeto (some ao desselecionar/tocar fora), com botão explícito de
-  fechar (X) além de tocar fora.
+  fechar (X) além de tocar fora. **Comportamento anti-interceptação de
+  toque (Fase 1):** a cada nova seleção o sheet nasce **recolhido**
+  (apenas a barra de título, sem cobrir o canvas onde o objeto acabou
+  de ser inserido/selecionado) e é forçado a ficar recolhido durante
+  qualquer arraste em andamento no canvas — nunca reabre sozinho ao
+  final do gesto, só quando o usuário toca a barra de título
+  explicitamente ("reabre sob demanda"). Fechar via X sempre apenas
+  desseleciona, nunca exclui o objeto. Ver
+  `src/shared/ui/BottomSheet.tsx` (`collapsed`/`onToggleCollapsed`) e
+  `src/features/editor/EditorPage.tsx`.
 - **Barra de ações** sempre visível na base quando o editor está aberto,
   com os controles mais usados; ações menos comuns (duplicar layout,
   configurações do layout) ficam em um menu (`⋮`) na barra superior.

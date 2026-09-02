@@ -1,14 +1,33 @@
 import type { ObjectTypeKey } from '../../../types/layout'
 import { AREA_TYPE_LABELS } from '../../../shared/lib/colors'
 import { Area } from './renderers/Area'
+import { AreaInspection } from './renderers/AreaInspection'
+import { AreaPicking } from './renderers/AreaPicking'
+import { AreaReceiving } from './renderers/AreaReceiving'
+import { AreaShipping } from './renderers/AreaShipping'
+import { AreaStaging } from './renderers/AreaStaging'
 import { Corridor } from './renderers/Corridor'
+import { Conveyor } from './renderers/Conveyor'
+import { DirectionalArrow } from './renderers/DirectionalArrow'
 import { Dock } from './renderers/Dock'
 import { Door } from './renderers/Door'
 import { FlowRoute } from './renderers/FlowRoute'
 import { Forklift } from './renderers/Forklift'
+import { Intersection } from './renderers/Intersection'
+import { LabelPrinter } from './renderers/LabelPrinter'
+import { PackingTable } from './renderers/PackingTable'
 import { Pallet } from './renderers/Pallet'
 import { PalletJack } from './renderers/PalletJack'
+import { PedestrianLane } from './renderers/PedestrianLane'
+import { PlatformCart } from './renderers/PlatformCart'
 import { Rack } from './renderers/Rack'
+import { RfScanner } from './renderers/RfScanner'
+import { SafetyZone } from './renderers/SafetyZone'
+import { Scale } from './renderers/Scale'
+import { Shelf } from './renderers/Shelf'
+import { SortingBench } from './renderers/SortingBench'
+import { StorageBlock } from './renderers/StorageBlock'
+import { TrafficLane } from './renderers/TrafficLane'
 import { Wall } from './renderers/Wall'
 import type { ObjectTypeDefinition, PropertyFieldDefinition } from './types'
 
@@ -182,6 +201,270 @@ export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
       { key: 'flowType', label: 'Tipo de fluxo', kind: 'select', options: FLOW_TYPE_OPTIONS },
     ],
     defaultProperties: { flowType: 'people' },
+  },
+
+  // --- Armazenagem (Fase 3) ---
+  shelf: {
+    key: 'shelf',
+    category: 'storage',
+    label: 'Estante',
+    defaultWidth: 100,
+    defaultLength: 40,
+    resizable: true,
+    render: Shelf,
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      { key: 'levels', label: 'Níveis', kind: 'select', options: LEVEL_OPTIONS },
+    ],
+    defaultProperties: { levels: 4 },
+  },
+  'storage-block': {
+    key: 'storage-block',
+    category: 'storage',
+    label: 'Bloco de armazenagem',
+    defaultWidth: 200,
+    defaultLength: 200,
+    resizable: true,
+    render: StorageBlock,
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      {
+        key: 'size',
+        label: 'Área',
+        kind: 'info',
+        compute: (obj) => `${((obj.width / 100) * (obj.length / 100)).toFixed(1)} m²`,
+      },
+    ],
+  },
+  'area-picking': {
+    key: 'area-picking',
+    category: 'storage',
+    label: 'Área de picking',
+    defaultWidth: 300,
+    defaultLength: 300,
+    resizable: true,
+    render: AreaPicking,
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      {
+        key: 'size',
+        label: 'Área',
+        kind: 'info',
+        compute: (obj) => `${((obj.width / 100) * (obj.length / 100)).toFixed(1)} m²`,
+      },
+    ],
+  },
+  'area-staging': {
+    key: 'area-staging',
+    category: 'storage',
+    label: 'Área de staging',
+    defaultWidth: 300,
+    defaultLength: 300,
+    resizable: true,
+    render: AreaStaging,
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      {
+        key: 'size',
+        label: 'Área',
+        kind: 'info',
+        compute: (obj) => `${((obj.width / 100) * (obj.length / 100)).toFixed(1)} m²`,
+      },
+    ],
+  },
+
+  // --- Operação (Fase 3) ---
+  conveyor: {
+    key: 'conveyor',
+    category: 'equipment',
+    label: 'Esteira transportadora',
+    defaultWidth: 200,
+    defaultLength: 50,
+    resizable: true,
+    render: Conveyor,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS, EQUIPMENT_CODE_FIELD],
+  },
+  'sorting-bench': {
+    key: 'sorting-bench',
+    category: 'equipment',
+    label: 'Bancada de separação',
+    defaultWidth: 150,
+    defaultLength: 70,
+    resizable: true,
+    render: SortingBench,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS, EQUIPMENT_CODE_FIELD],
+  },
+  'packing-table': {
+    key: 'packing-table',
+    category: 'equipment',
+    label: 'Mesa de packing',
+    defaultWidth: 150,
+    defaultLength: 80,
+    resizable: true,
+    render: PackingTable,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS, EQUIPMENT_CODE_FIELD],
+  },
+  scale: {
+    key: 'scale',
+    category: 'equipment',
+    label: 'Balança',
+    defaultWidth: 100,
+    defaultLength: 100,
+    resizable: true,
+    render: Scale,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS, EQUIPMENT_CODE_FIELD],
+  },
+  'label-printer': {
+    key: 'label-printer',
+    category: 'equipment',
+    label: 'Impressora/estação de etiquetas',
+    defaultWidth: 45,
+    defaultLength: 35,
+    resizable: false,
+    render: LabelPrinter,
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD],
+  },
+  'rf-scanner': {
+    key: 'rf-scanner',
+    category: 'equipment',
+    label: 'Scanner/RF',
+    defaultWidth: 35,
+    defaultLength: 15,
+    resizable: false,
+    render: RfScanner,
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD],
+  },
+  'area-inspection': {
+    key: 'area-inspection',
+    category: 'area',
+    label: 'Área de conferência',
+    defaultWidth: 300,
+    defaultLength: 300,
+    resizable: true,
+    render: AreaInspection,
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      {
+        key: 'size',
+        label: 'Área',
+        kind: 'info',
+        compute: (obj) => `${((obj.width / 100) * (obj.length / 100)).toFixed(1)} m²`,
+      },
+    ],
+  },
+  'area-shipping': {
+    key: 'area-shipping',
+    category: 'area',
+    label: 'Área de expedição',
+    defaultWidth: 300,
+    defaultLength: 300,
+    resizable: true,
+    render: AreaShipping,
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      {
+        key: 'size',
+        label: 'Área',
+        kind: 'info',
+        compute: (obj) => `${((obj.width / 100) * (obj.length / 100)).toFixed(1)} m²`,
+      },
+    ],
+  },
+  'area-receiving': {
+    key: 'area-receiving',
+    category: 'area',
+    label: 'Área de recebimento',
+    defaultWidth: 300,
+    defaultLength: 300,
+    resizable: true,
+    render: AreaReceiving,
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      {
+        key: 'size',
+        label: 'Área',
+        kind: 'info',
+        compute: (obj) => `${((obj.width / 100) * (obj.length / 100)).toFixed(1)} m²`,
+      },
+    ],
+  },
+
+  // --- Fluxo (Fase 3) ---
+  'directional-arrow': {
+    key: 'directional-arrow',
+    category: 'flow',
+    label: 'Seta direcional',
+    defaultWidth: 80,
+    defaultLength: 40,
+    resizable: false,
+    render: DirectionalArrow,
+    propertyFields: [...BASE_FIELDS],
+  },
+  'traffic-lane': {
+    key: 'traffic-lane',
+    category: 'flow',
+    label: 'Faixa de circulação',
+    defaultWidth: 300,
+    defaultLength: 100,
+    resizable: true,
+    render: TrafficLane,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS],
+  },
+  intersection: {
+    key: 'intersection',
+    category: 'flow',
+    label: 'Cruzamento',
+    defaultWidth: 150,
+    defaultLength: 150,
+    resizable: true,
+    render: Intersection,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS],
+  },
+  'safety-zone': {
+    key: 'safety-zone',
+    category: 'flow',
+    label: 'Zona de segurança',
+    defaultWidth: 150,
+    defaultLength: 150,
+    resizable: true,
+    render: SafetyZone,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS],
+  },
+  'pedestrian-lane': {
+    key: 'pedestrian-lane',
+    category: 'flow',
+    label: 'Faixa de pedestres',
+    defaultWidth: 200,
+    defaultLength: 80,
+    resizable: true,
+    render: PedestrianLane,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS],
+  },
+
+  // --- Equipamentos (Fase 3) ---
+  'platform-cart': {
+    key: 'platform-cart',
+    category: 'equipment',
+    label: 'Carrinho de carga/plataforma',
+    defaultWidth: 80,
+    defaultLength: 120,
+    resizable: false,
+    render: PlatformCart,
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD],
   },
 }
 
