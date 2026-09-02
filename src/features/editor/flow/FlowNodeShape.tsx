@@ -7,6 +7,7 @@ interface FlowNodeShapeProps {
   selected: boolean
   linked: boolean
   onSelect: (id: string) => void
+  onRename: (id: string, name: string) => void
   onDragMove: (id: string, x: number, y: number) => void
   onDragEnd: (id: string, x: number, y: number) => void
   onHandleDragStart: (id: string, x: number, y: number) => void
@@ -15,20 +16,16 @@ interface FlowNodeShapeProps {
 
 const { width, height } = FLOW_NODE_SIZE
 
-/** A process-step box: rounded rect tinted by type, name/type label, and a small connect handle
- * on the right edge the user drags to another node to create a directional connection. */
-export function FlowNodeShape({
-  node,
-  selected,
-  linked,
-  onSelect,
-  onDragMove,
-  onDragEnd,
-  onHandleDragStart,
-  registerRef,
-}: FlowNodeShapeProps) {
+export function FlowNodeShape({ node, selected, linked, onSelect, onRename, onDragMove, onDragEnd, onHandleDragStart, registerRef }: FlowNodeShapeProps) {
   const color = FLOW_NODE_TYPE_COLORS[node.type]
-  const label = node.name?.trim() || FLOW_NODE_TYPE_LABELS[node.type]
+  const defaultLabel = FLOW_NODE_TYPE_LABELS[node.type]
+  const label = node.name?.trim() || defaultLabel
+
+  function editName() {
+    const value = window.prompt('Nome da etapa', node.name?.trim() || defaultLabel)
+    if (value === null) return
+    onRename(node.id, value.trim())
+  }
 
   return (
     <Group
@@ -41,18 +38,7 @@ export function FlowNodeShape({
       onClick={() => onSelect(node.id)}
       onTap={() => onSelect(node.id)}
     >
-      <Rect
-        width={width}
-        height={height}
-        fill={color}
-        opacity={0.14}
-        stroke={color}
-        strokeWidth={selected ? 3 : 1.5}
-        cornerRadius={10}
-        shadowColor="#000000"
-        shadowOpacity={selected ? 0.18 : 0.08}
-        shadowBlur={8}
-      />
+      <Rect width={width} height={height} fill={color} opacity={0.14} stroke={color} strokeWidth={selected ? 3 : 1.5} cornerRadius={10} shadowColor="#000000" shadowOpacity={selected ? 0.18 : 0.08} shadowBlur={8} />
       <Rect x={0} y={0} width={6} height={height} fill={color} cornerRadius={[10, 0, 0, 10]} />
       <Text
         text={label}
@@ -66,14 +52,16 @@ export function FlowNodeShape({
         fill={color}
         wrap="word"
         ellipsis
+        onDblClick={(e) => {
+          e.cancelBubble = true
+          editName()
+        }}
+        onDblTap={(e) => {
+          e.cancelBubble = true
+          editName()
+        }}
       />
-      {linked && (
-        <Circle x={width - 14} y={14} radius={4} fill="#16A34A" stroke="#FFFFFF" strokeWidth={1} />
-      )}
-      {/* Connect handle — press-and-drag from here to another node to create a connection.
-          Plain pointer events (no Konva `draggable`) so the gesture is fully driven by
-          FlowCanvas's own stage-level mousemove/touchmove/mouseup, which both draws the
-          rubber-band line and detects the drop target. */}
+      {linked && <Circle x={width - 14} y={14} radius={4} fill="#16A34A" stroke="#FFFFFF" strokeWidth={1} />}
       <Circle
         x={width}
         y={height / 2}
