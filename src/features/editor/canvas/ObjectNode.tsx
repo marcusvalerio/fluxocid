@@ -197,14 +197,10 @@ export function ObjectNode({
     <Group
       ref={(node) => {
         registerRef(obj.id, node)
-        // A quick scale/opacity pop on mount — the "objeto inserido" microinteraction. The ref
-        // callback only fires once per mount (obj.id is a stable React key), so this can't
-        // replay on ordinary re-renders (drag, property edits, etc).
-        if (node) {
-          node.scale({ x: 0.85, y: 0.85 })
-          node.opacity(0)
-          node.to({ scaleX: 1, scaleY: 1, opacity: 1, duration: 0.12, easing: Konva.Easings.EaseOut })
-        }
+        // IMPORTANT: do not animate from the ref callback. React/Konva can invoke a callback ref
+        // again on ordinary renders when the callback identity changes. Animating here caused the
+        // object to repeatedly fade/scale in during pointer movement and state updates, producing
+        // a visible flicker / "Christmas tree" effect. Object insertion should remain stable.
       }}
       x={centerXPx}
       y={centerYPx}
