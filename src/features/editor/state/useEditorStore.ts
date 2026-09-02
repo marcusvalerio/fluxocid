@@ -91,6 +91,7 @@ interface EditorState {
   addFlowConnection: (fromId: string, toId: string, flowType: FlowConnectionType) => void
   selectFlowConnection: (id: string | null) => void
   setFlowConnectionProperty: (id: string, key: string, value: unknown) => void
+  reverseFlowConnection: (id: string) => void
   deleteFlowConnection: (id: string) => void
   setPendingConnectionFrom: (id: string | null) => void
 }
@@ -507,6 +508,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setFlowConnectionProperty: (id, key, value) => {
     set({
       flowConnections: get().flowConnections.map((c) => (c.id === id ? { ...c, [key]: value } : c)),
+    })
+  },
+
+  reverseFlowConnection: (id) => {
+    set({
+      flowConnections: get().flowConnections.map((c) =>
+        c.id === id ? { ...c, fromNodeId: c.toNodeId, toNodeId: c.fromNodeId } : c,
+      ),
     })
   },
 

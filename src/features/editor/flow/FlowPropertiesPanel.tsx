@@ -1,4 +1,4 @@
-import { Copy, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, Copy, Trash2 } from 'lucide-react'
 import { useEditorStore } from '../state/useEditorStore'
 import { IconButton } from '../../../shared/ui/IconButton'
 import {
@@ -92,6 +92,7 @@ function FlowNodeProperties({ node }: { node: FlowNode }) {
 
 function FlowConnectionProperties({ connection }: { connection: FlowConnection }) {
   const setFlowConnectionProperty = useEditorStore((s) => s.setFlowConnectionProperty)
+  const reverseFlowConnection = useEditorStore((s) => s.reverseFlowConnection)
   const deleteFlowConnection = useEditorStore((s) => s.deleteFlowConnection)
   const flowNodes = useEditorStore((s) => s.flowNodes)
   const fromNode = flowNodes.find((n) => n.id === connection.fromNodeId)
@@ -101,9 +102,14 @@ function FlowConnectionProperties({ connection }: { connection: FlowConnection }
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-heading text-base font-semibold text-text-primary">Conexão</h2>
-        <IconButton label="Excluir conexão" onClick={() => deleteFlowConnection(connection.id)}>
-          <Trash2 size={18} className="text-danger" />
-        </IconButton>
+        <div className="flex gap-1">
+          <IconButton label="Inverter direção" onClick={() => reverseFlowConnection(connection.id)}>
+            <ArrowLeftRight size={18} />
+          </IconButton>
+          <IconButton label="Excluir conexão" onClick={() => deleteFlowConnection(connection.id)}>
+            <Trash2 size={18} className="text-danger" />
+          </IconButton>
+        </div>
       </div>
 
       <p className="text-sm text-text-secondary">

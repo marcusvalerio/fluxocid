@@ -332,6 +332,19 @@ describe('useEditorStore', () => {
       expect(useEditorStore.getState().selectedFlowConnectionId).toBeNull()
     })
 
+    it('reverses a connection direction (swaps from/to)', () => {
+      useEditorStore.getState().addFlowNode('receiving', 100, 100)
+      useEditorStore.getState().addFlowNode('storage', 500, 500)
+      const [from, to] = useEditorStore.getState().flowNodes
+      useEditorStore.getState().addFlowConnection(from.id, to.id, 'material')
+      const [conn] = useEditorStore.getState().flowConnections
+
+      useEditorStore.getState().reverseFlowConnection(conn.id)
+      const [reversed] = useEditorStore.getState().flowConnections
+      expect(reversed.fromNodeId).toBe(to.id)
+      expect(reversed.toNodeId).toBe(from.id)
+    })
+
     it('deleting a connection only removes that connection', () => {
       useEditorStore.getState().addFlowNode('receiving', 100, 100)
       useEditorStore.getState().addFlowNode('storage', 500, 500)

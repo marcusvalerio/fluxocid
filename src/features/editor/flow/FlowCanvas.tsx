@@ -9,6 +9,14 @@ import { FLOW_NODE_SIZE, type FlowNodeType } from '../../../types/flow'
 const MIN_ZOOM = 0.3
 const MAX_ZOOM = 2.5
 
+function getDistance(p1: { x: number; y: number }, p2: { x: number; y: number }) {
+  return Math.hypot(p1.x - p2.x, p1.y - p2.y)
+}
+
+function getCenter(p1: { x: number; y: number }, p2: { x: number; y: number }) {
+  return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+}
+
 export interface FlowCanvasHandle {
   insertNodeAtCenter: (type: FlowNodeType) => void
   zoomIn: () => void
@@ -38,6 +46,8 @@ export function FlowCanvas({ registerHandle }: FlowCanvasProps) {
   const panActiveRef = useRef(false)
   const panLastScreenRef = useRef<{ x: number; y: number } | null>(null)
   const singleTouchPan = useRef<{ x: number; y: number } | null>(null)
+  const lastPinchDistance = useRef<number | null>(null)
+  const lastPinchCenter = useRef<{ x: number; y: number } | null>(null)
 
   const flowNodes = useEditorStore((s) => s.flowNodes)
   const flowConnections = useEditorStore((s) => s.flowConnections)
@@ -229,10 +239,18 @@ export function FlowCanvas({ registerHandle }: FlowCanvasProps) {
       selectFlowNode(null)
       selectFlowConnection(null)
     }
+    if (touches.length >= 2) {
+      // A second finger landing mid-drag (e.g. a pinch starting near a node) hands the gesture
+      // to pinch-zoom instead of letting them fight — same guard as the Layout canvas.
+      nodesById.current.forEach((node) => {
+        if (node.isDragging()) node.stopDrag()
+      })
+    }
   }
 
   function handleTouchMove(e: Konva.KonvaEventObject<TouchEvent>) {
     const touches = e.evt.touches
+
     if (touches.length === 1 && singleTouchPan.current && !pendingConnectionFromId) {
       const dx = touches[0].clientX - singleTouchPan.current.x
       const dy = touches[0].clientY - singleTouchPan.current.y
@@ -246,11 +264,40 @@ export function FlowCanvas({ registerHandle }: FlowCanvasProps) {
       if (rect) {
         setTempConnectionEnd(stageToWorld({ x: touches[0].clientX - rect.left, y: touches[0].clientY - rect.top }))
       }
+      return
     }
+
+    if (touches.length !== 2) return
+    e.evt.preventDefault()
+    singleTouchPan.current = null
+
+    const stage = e.target.getStage()
+    if (!stage) return
+    const rect = stage.container().getBoundingClientRect()
+    const p1 = { x: touches[0].clientX - rect.left, y: touches[0].clientY - rect.top }
+    const p2 = { x: touches[1].clientX - rect.left, y: touches[1].clientY - rect.top }
+    const distance = getDistance(p1, p2)
+    const center = getCenter(p1, p2)
+
+    if (lastPinchDistance.current !== null && lastPinchCenter.current !== null) {
+      setCameraState((c) => {
+        const scaleChange = distance / (lastPinchDistance.current ?? distance)
+        const newZoom = clampZoom(c.zoom * scaleChange)
+        const worldX = (center.x - c.x) / c.zoom
+        const worldY = (center.y - c.y) / c.zoom
+        return { zoom: newZoom, x: center.x - worldX * newZoom, y: center.y - worldY * newZoom }
+      })
+    }
+    lastPinchDistance.current = distance
+    lastPinchCenter.current = center
   }
 
   function handleTouchEnd(e: Konva.KonvaEventObject<TouchEvent>) {
-    singleTouchPan.current = null
+    if (e.evt.touches.length === 0) singleTouchPan.current = null
+    if (e.evt.touches.length < 2) {
+      lastPinchDistance.current = null
+      lastPinchCenter.current = null
+    }
     finishPendingConnection(e.target.getStage())
   }
 

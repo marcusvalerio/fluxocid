@@ -115,7 +115,13 @@ npm run lint      # lint (oxlint)
       paleteira e carrinho passam a registrar capacidade, raio de giro
       e largura mínima de corredor (informativo, preparado para
       validações automáticas futuras)
-- [ ] P9 — QA completo
+- [x] P9 — QA completo: adiciona inverter direção de conexão (ação
+      antes ausente no fluxograma) e pinch-zoom de duas dedos na
+      Prancheta de Fluxo (paridade de toque com o Layout); revalidados
+      redimensionar, seleção múltipla/alinhar/distribuir, undo/redo,
+      exportação com fundo sólido em mobile, e persistência completa
+      Layout+Fluxo após reload — 63 testes automatizados, sem
+      regressões encontradas
 
 Fora do escopo desta etapa (aguardando instrução): Supabase,
 autenticação, backend, banco de dados em nuvem, editor 3D, deploy
