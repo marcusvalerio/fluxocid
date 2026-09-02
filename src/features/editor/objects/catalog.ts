@@ -1,5 +1,6 @@
 import type { ObjectTypeKey } from '../../../types/layout'
 import { AREA_TYPE_LABELS } from '../../../shared/lib/colors'
+import { getRecommendedCorridorWidthCm } from '../../../shared/lib/spatialRules'
 import { Area } from './renderers/Area'
 import { AreaInspection } from './renderers/AreaInspection'
 import { AreaPicking } from './renderers/AreaPicking'
@@ -90,6 +91,21 @@ const FLOW_TYPE_OPTIONS = [
   { value: 'material', label: 'Materiais' },
 ]
 
+/** Corridor traffic type — drives the recommended minimum width used by
+ * spatialRules.findNarrowCorridors (Fase 8 § Corredores inteligentes). */
+const CORRIDOR_TYPE_OPTIONS = [
+  { value: 'pedestrian', label: 'Pedestres' },
+  { value: 'forklift', label: 'Empilhadeira' },
+  { value: 'mixed', label: 'Misto' },
+  { value: 'pallets', label: 'Pallets' },
+  { value: 'picking', label: 'Picking' },
+]
+
+const CORRIDOR_DIRECTION_OPTIONS = [
+  { value: 'two-way', label: 'Mão dupla' },
+  { value: 'one-way', label: 'Mão única' },
+]
+
 export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
   wall: {
     key: 'wall',
@@ -156,7 +172,19 @@ export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
     defaultLength: 150,
     resizable: true,
     render: Corridor,
-    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS],
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      { key: 'corridorType', label: 'Tipo de corredor', kind: 'select', options: CORRIDOR_TYPE_OPTIONS },
+      { key: 'direction', label: 'Sentido', kind: 'select', options: CORRIDOR_DIRECTION_OPTIONS },
+      {
+        key: 'minWidthHint',
+        label: 'Largura mín. recomendada',
+        kind: 'info',
+        compute: (obj) => `${(getRecommendedCorridorWidthCm(obj.properties.corridorType) / 100).toFixed(2)} m`,
+      },
+    ],
+    defaultProperties: { corridorType: 'mixed', direction: 'two-way' },
   },
   pallet: {
     key: 'pallet',

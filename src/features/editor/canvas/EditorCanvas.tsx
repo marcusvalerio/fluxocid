@@ -11,7 +11,7 @@ import { GuideLines, type SnapGuides } from './GuideLines'
 import { SelectionTransformer } from './SelectionTransformer'
 import { useEditorStore, type Camera } from '../state/useEditorStore'
 import { getBoundingBox } from '../../../shared/lib/geometry'
-import { findStorageOverlaps, getBoundsStatus } from '../../../shared/lib/spatialRules'
+import { computeSpatialViolations, findStorageOverlaps, getBoundsStatus } from '../../../shared/lib/spatialRules'
 import { cmToPx, pxToCm } from '../../../shared/lib/units'
 import { useIsDarkMode } from '../../../shared/lib/useIsDarkMode'
 import type { ObjectTypeKey } from '../../../types/layout'
@@ -92,6 +92,19 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
     const map = new Map<string, ReturnType<typeof getBoundsStatus>>()
     for (const o of objects) map.set(o.id, getBoundsStatus(o, envWidthCm, envHeightCm))
     return map
+  }, [objects, envWidthM, envHeightM])
+  // Corredor bloqueado, conflito equipamento×estrutura, área operacional sobreposta, corredor
+  // estreito, doca bloqueada (Fase 8 § Regras logísticas básicas) — layered onto the same
+  // red/orange outlines as the existing overlap/bounds checks above (see ObjectNode).
+  const { criticalViolationIds, warningViolationIds } = useMemo(() => {
+    const violations = computeSpatialViolations(objects, envWidthM * 100, envHeightM * 100)
+    const critical = new Set<string>()
+    const warning = new Set<string>()
+    for (const v of violations) {
+      const target = v.severity === 'critical' ? critical : warning
+      for (const id of v.objectIds) target.add(id)
+    }
+    return { criticalViolationIds: critical, warningViolationIds: warning }
   }, [objects, envWidthM, envHeightM])
   const isDarkMode = useIsDarkMode()
 
@@ -489,6 +502,8 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
                   selected={selectedIds.includes(obj.id)}
                   hasOverlap={overlappingIds.has(obj.id)}
                   boundsStatus={boundsStatusById.get(obj.id) ?? 'inside'}
+                  hasCriticalViolation={criticalViolationIds.has(obj.id)}
+                  hasWarningViolation={warningViolationIds.has(obj.id)}
                   registerRef={(id, node) => {
                     if (node) nodesById.current.set(id, node)
                     else nodesById.current.delete(id)

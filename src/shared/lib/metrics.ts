@@ -14,8 +14,10 @@ export interface ProjectMetrics {
   qtdEtapasFluxo: number
 }
 
-const CIRCULATION_TYPES = new Set(['corridor', 'traffic-lane', 'pedestrian-lane', 'intersection'])
-const AREA_TYPES = new Set([
+/** Exported for reuse by spatialRules.ts (e.g. "área operacional sobreposta" / corridor-blocking
+ * checks need the same type groupings as the metrics they're derived from). */
+export const CIRCULATION_TYPES = new Set(['corridor', 'traffic-lane', 'pedestrian-lane', 'intersection'])
+export const AREA_TYPES = new Set([
   'area',
   'area-picking',
   'area-staging',
