@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CATEGORY_LABELS, getObjectTypesByCategory, OBJECT_CATEGORIES_ORDER } from '../objects/catalog'
-import { CATEGORY_COLORS } from '../../../shared/lib/colors'
+import { ObjectThumbnail } from '../objects/ObjectThumbnail'
 import type { ObjectTypeKey } from '../../../types/layout'
 
 interface LibraryPanelProps {
@@ -33,13 +33,12 @@ export function LibraryPanel({ onInsert }: LibraryPanelProps) {
           <button
             key={def.key}
             onClick={() => onInsert(def.key)}
-            className="flex items-center gap-3 p-3 rounded-md border border-border hover:border-primary/50 hover:bg-primary/5 text-left transition-colors"
+            className="flex flex-col rounded-md border border-border hover:border-primary/50 hover:bg-primary/5 text-left transition-colors overflow-hidden md:flex-row md:items-center"
           >
-            <span
-              className="w-8 h-8 rounded shrink-0"
-              style={{ backgroundColor: CATEGORY_COLORS[def.category], opacity: 0.85 }}
-            />
-            <span className="text-sm font-medium text-text-primary">{def.label}</span>
+            <span className="flex items-center justify-center bg-surface-alt shrink-0">
+              <ObjectThumbnail objectType={def.key} width={130} height={90} />
+            </span>
+            <span className="text-xs md:text-sm font-medium text-text-primary px-2 py-1.5 leading-tight">{def.label}</span>
           </button>
         ))}
       </div>

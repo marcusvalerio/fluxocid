@@ -6,11 +6,11 @@ const COLOR = AREA_TYPE_COLORS.shipping
 
 /** An expedição (outbound shipping) zone: translucent tinted floor area plus an outward-pointing
  * arrow pictogram, so it reads distinctly from the generic Área object. */
-export function AreaShipping({ widthPx, lengthPx, obj }: ObjectRenderProps) {
+export function AreaShipping({ widthPx, lengthPx, obj, compact }: ObjectRenderProps) {
   const label = obj.name ?? 'Expedição'
-  const arrowSize = Math.min(30, widthPx * 0.35, lengthPx * 0.6)
-  const cx = 10 + arrowSize / 2
-  const cy = 10 + arrowSize / 2
+  const arrowSize = compact ? Math.min(widthPx, lengthPx) * 0.6 : Math.min(30, widthPx * 0.35, lengthPx * 0.6)
+  const cx = compact ? widthPx / 2 : 10 + arrowSize / 2
+  const cy = compact ? lengthPx / 2 : 10 + arrowSize / 2
 
   return (
     <>
@@ -23,7 +23,9 @@ export function AreaShipping({ widthPx, lengthPx, obj }: ObjectRenderProps) {
         pointerLength={arrowSize * 0.35}
         pointerWidth={arrowSize * 0.3}
       />
-      <Text text={label} width={widthPx} height={lengthPx} align="center" verticalAlign="middle" fill={COLOR} fontStyle="600" fontSize={14} listening={false} />
+      {!compact && (
+        <Text text={label} width={widthPx} height={lengthPx} align="center" verticalAlign="middle" fill={COLOR} fontStyle="600" fontSize={14} listening={false} />
+      )}
     </>
   )
 }

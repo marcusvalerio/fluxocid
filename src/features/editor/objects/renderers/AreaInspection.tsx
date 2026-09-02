@@ -5,11 +5,11 @@ const COLOR = '#0EA5E9'
 
 /** A conference/inspection zone: translucent tinted floor area plus a clipboard-checkmark
  * pictogram. */
-export function AreaInspection({ widthPx, lengthPx, obj }: ObjectRenderProps) {
+export function AreaInspection({ widthPx, lengthPx, obj, compact }: ObjectRenderProps) {
   const label = obj.name ?? 'Conferência'
-  const iconSize = Math.min(24, widthPx * 0.28, lengthPx * 0.5)
-  const ix = 10
-  const iy = 10
+  const iconSize = compact ? Math.min(widthPx, lengthPx) * 0.55 : Math.min(24, widthPx * 0.28, lengthPx * 0.5)
+  const ix = compact ? (widthPx - iconSize * 0.75) / 2 : 10
+  const iy = compact ? (lengthPx - iconSize) / 2 : 10
 
   return (
     <>
@@ -22,7 +22,9 @@ export function AreaInspection({ widthPx, lengthPx, obj }: ObjectRenderProps) {
         lineCap="round"
         lineJoin="round"
       />
-      <Text text={label} width={widthPx} height={lengthPx} align="center" verticalAlign="middle" fill={COLOR} fontStyle="600" fontSize={14} listening={false} />
+      {!compact && (
+        <Text text={label} width={widthPx} height={lengthPx} align="center" verticalAlign="middle" fill={COLOR} fontStyle="600" fontSize={14} listening={false} />
+      )}
     </>
   )
 }
