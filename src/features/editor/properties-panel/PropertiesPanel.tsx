@@ -1,4 +1,4 @@
-import { AlertTriangle, Copy, RotateCcw, RotateCw, Trash2 } from 'lucide-react'
+import { AlertTriangle, BringToFront, Copy, RotateCcw, RotateCw, SendToBack, Trash2 } from 'lucide-react'
 import { OBJECT_CATALOG } from '../objects/catalog'
 import { useEditorStore } from '../state/useEditorStore'
 import { cmToM, mToCm } from '../../../shared/lib/units'
@@ -9,9 +9,7 @@ import type { LayoutObject } from '../../../types/layout'
 
 interface PropertiesPanelProps {
   object: LayoutObject
-  /** True when this object's footprint overlaps another storage object (rack/corridor). */
   hasOverlap?: boolean
-  /** Whether the object sits inside, straddles, or is entirely off the environment. */
   boundsStatus?: BoundsStatus
 }
 
@@ -25,9 +23,25 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
   const deleteObject = useEditorStore((s) => s.deleteObject)
   const duplicateObject = useEditorStore((s) => s.duplicateObject)
   const rotateObject = useEditorStore((s) => s.rotateObject)
+  const commitObject = useEditorStore((s) => s.commitObject)
+  const objects = useEditorStore((s) => s.objects)
 
   const def = OBJECT_CATALOG[object.objectType]
   const boundsWarning = boundsStatus ? BOUNDS_WARNING_TEXT[boundsStatus] : undefined
+
+  function bringToFront() {
+    if (objects.length < 2) return
+    const maxZ = Math.max(...objects.map((o) => o.zIndex))
+    if (object.zIndex === maxZ) return
+    commitObject(object.id, { zIndex: maxZ + 1 })
+  }
+
+  function sendToBack() {
+    if (objects.length < 2) return
+    const minZ = Math.min(...objects.map((o) => o.zIndex))
+    if (object.zIndex === minZ) return
+    commitObject(object.id, { zIndex: minZ - 1 })
+  }
 
   return (
     <div className="space-y-4">
@@ -46,6 +60,12 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
       <div className="flex items-center justify-between">
         <h2 className="font-heading text-base font-semibold text-text-primary">{def.label}</h2>
         <div className="flex gap-1">
+          <IconButton label="Trazer para frente" onClick={bringToFront}>
+            <BringToFront size={18} />
+          </IconButton>
+          <IconButton label="Enviar para trás" onClick={sendToBack}>
+            <SendToBack size={18} />
+          </IconButton>
           <IconButton label="Girar -90°" onClick={() => rotateObject(object.id, -90)}>
             <RotateCcw size={18} />
           </IconButton>
@@ -68,89 +88,35 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
             return (
               <label key={field.key} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-text-secondary">{field.label}</span>
-                <input
-                  type="text"
-                  value={value}
-                  placeholder={def.label}
-                  onChange={(e) => setProperty(object.id, field.key, e.target.value)}
-                  className="w-32 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
+                <input type="text" value={value} placeholder={def.label} onChange={(e) => setProperty(object.id, field.key, e.target.value)} className="w-32 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40" />
               </label>
             )
           }
-
           if (field.kind === 'number-m') {
             const raw = (object as unknown as Record<string, number>)[field.key]
-            return (
-              <NumberField
-                key={field.key}
-                label={field.label}
-                unit="m"
-                step={field.step ?? 0.1}
-                min={field.min}
-                value={cmToM(raw)}
-                onCommit={(v) => setProperty(object.id, field.key, mToCm(v))}
-              />
-            )
+            return <NumberField key={field.key} label={field.label} unit="m" step={field.step ?? 0.1} min={field.min} value={cmToM(raw)} onCommit={(v) => setProperty(object.id, field.key, mToCm(v))} />
           }
-
           if (field.kind === 'number-deg') {
-            return (
-              <NumberField
-                key={field.key}
-                label={field.label}
-                unit="°"
-                step={field.step ?? 15}
-                value={object.rotationDeg}
-                onCommit={(v) => setProperty(object.id, field.key, ((v % 360) + 360) % 360)}
-              />
-            )
+            return <NumberField key={field.key} label={field.label} unit="°" step={field.step ?? 15} value={object.rotationDeg} onCommit={(v) => setProperty(object.id, field.key, ((v % 360) + 360) % 360)} />
           }
-
           if (field.kind === 'number-plain') {
             const raw = Number(object.properties[field.key] ?? 0)
-            return (
-              <NumberField
-                key={field.key}
-                label={field.label}
-                unit={field.unit ?? ''}
-                step={field.step ?? 1}
-                min={field.min}
-                value={raw}
-                onCommit={(v) => setProperty(object.id, field.key, v)}
-              />
-            )
+            return <NumberField key={field.key} label={field.label} unit={field.unit ?? ''} step={field.step ?? 1} min={field.min} value={raw} onCommit={(v) => setProperty(object.id, field.key, v)} />
           }
-
           if (field.kind === 'select') {
             const value = String(object.properties[field.key] ?? field.options?.[0]?.value ?? '')
             return (
               <label key={field.key} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-text-secondary">{field.label}</span>
-                <select
-                  value={value}
-                  onChange={(e) => setProperty(object.id, field.key, e.target.value)}
-                  className="w-32 rounded border border-border bg-white px-2 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-primary/40"
-                >
-                  {field.options?.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
+                <select value={value} onChange={(e) => setProperty(object.id, field.key, e.target.value)} className="w-32 rounded border border-border bg-white px-2 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-primary/40">
+                  {field.options?.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </label>
             )
           }
-
           if (field.kind === 'info') {
-            return (
-              <div key={field.key} className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-text-secondary">{field.label}</span>
-                <span className="text-text-primary font-medium">{field.compute?.(object)}</span>
-              </div>
-            )
+            return <div key={field.key} className="flex items-center justify-between gap-2 text-sm"><span className="text-text-secondary">{field.label}</span><span className="text-text-primary font-medium">{field.compute?.(object)}</span></div>
           }
-
           return null
         })}
       </div>
