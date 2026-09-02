@@ -37,6 +37,19 @@ export type ObjectTypeKey =
   | 'safety-zone'
   | 'pedestrian-lane'
   | 'platform-cart'
+  | 'column'
+  | 'gate'
+  | 'stairs'
+  | 'drive-in'
+  | 'push-back'
+  | 'flow-rack'
+  | 'cantilever'
+  | 'reach-truck'
+  | 'tug'
+  | 'order-picker'
+  | 'box'
+  | 'container'
+  | 'cage-pallet'
 
 /** All measurements (x, y, width, length) are in centimeters. Rotation is in degrees [0, 360). */
 export interface LayoutObject {

@@ -6,28 +6,41 @@ import { AreaPicking } from './renderers/AreaPicking'
 import { AreaReceiving } from './renderers/AreaReceiving'
 import { AreaShipping } from './renderers/AreaShipping'
 import { AreaStaging } from './renderers/AreaStaging'
+import { Box } from './renderers/Box'
+import { CagePallet } from './renderers/CagePallet'
+import { Cantilever } from './renderers/Cantilever'
+import { Column } from './renderers/Column'
+import { Container } from './renderers/Container'
 import { Corridor } from './renderers/Corridor'
 import { Conveyor } from './renderers/Conveyor'
 import { DirectionalArrow } from './renderers/DirectionalArrow'
 import { Dock } from './renderers/Dock'
 import { Door } from './renderers/Door'
+import { DriveIn } from './renderers/DriveIn'
+import { FlowRack } from './renderers/FlowRack'
 import { FlowRoute } from './renderers/FlowRoute'
 import { Forklift } from './renderers/Forklift'
+import { Gate } from './renderers/Gate'
 import { Intersection } from './renderers/Intersection'
 import { LabelPrinter } from './renderers/LabelPrinter'
+import { OrderPicker } from './renderers/OrderPicker'
 import { PackingTable } from './renderers/PackingTable'
 import { Pallet } from './renderers/Pallet'
 import { PalletJack } from './renderers/PalletJack'
 import { PedestrianLane } from './renderers/PedestrianLane'
 import { PlatformCart } from './renderers/PlatformCart'
+import { PushBack } from './renderers/PushBack'
 import { Rack } from './renderers/Rack'
+import { ReachTruck } from './renderers/ReachTruck'
 import { RfScanner } from './renderers/RfScanner'
 import { SafetyZone } from './renderers/SafetyZone'
 import { Scale } from './renderers/Scale'
 import { Shelf } from './renderers/Shelf'
 import { SortingBench } from './renderers/SortingBench'
+import { Stairs } from './renderers/Stairs'
 import { StorageBlock } from './renderers/StorageBlock'
 import { TrafficLane } from './renderers/TrafficLane'
+import { Tug } from './renderers/Tug'
 import { Wall } from './renderers/Wall'
 import type { ObjectTypeDefinition, PropertyFieldDefinition } from './types'
 
@@ -476,6 +489,162 @@ export const OBJECT_CATALOG: Record<ObjectTypeKey, ObjectTypeDefinition> = {
     render: PlatformCart,
     propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD, ...EQUIPMENT_SPEC_FIELDS],
   },
+
+  // --- Estrutura (Fase 8) ---
+  column: {
+    key: 'column',
+    category: 'structure',
+    label: 'Coluna/Pilar',
+    defaultWidth: 40,
+    defaultLength: 40,
+    resizable: true,
+    render: Column,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS],
+  },
+  gate: {
+    key: 'gate',
+    category: 'structure',
+    label: 'Portão',
+    defaultWidth: 300,
+    defaultLength: 20,
+    resizable: true,
+    render: Gate,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS],
+  },
+  stairs: {
+    key: 'stairs',
+    category: 'structure',
+    label: 'Escada',
+    defaultWidth: 120,
+    defaultLength: 300,
+    resizable: true,
+    render: Stairs,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS],
+  },
+
+  // --- Armazenagem (Fase 8) ---
+  'drive-in': {
+    key: 'drive-in',
+    category: 'storage',
+    label: 'Drive-in',
+    defaultWidth: 300,
+    defaultLength: 150,
+    resizable: true,
+    render: DriveIn,
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      { key: 'levels', label: 'Níveis', kind: 'select', options: LEVEL_OPTIONS },
+    ],
+    defaultProperties: { levels: 3 },
+  },
+  'push-back': {
+    key: 'push-back',
+    category: 'storage',
+    label: 'Push-back',
+    defaultWidth: 300,
+    defaultLength: 150,
+    resizable: true,
+    render: PushBack,
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      { key: 'levels', label: 'Níveis', kind: 'select', options: LEVEL_OPTIONS },
+    ],
+    defaultProperties: { levels: 3 },
+  },
+  'flow-rack': {
+    key: 'flow-rack',
+    category: 'storage',
+    label: 'Flow rack',
+    defaultWidth: 300,
+    defaultLength: 150,
+    resizable: true,
+    render: FlowRack,
+    propertyFields: [
+      ...BASE_FIELDS,
+      ...DIMENSION_FIELDS,
+      ADDRESS_FIELD,
+      { key: 'levels', label: 'Níveis', kind: 'select', options: LEVEL_OPTIONS },
+    ],
+    defaultProperties: { levels: 3 },
+  },
+  cantilever: {
+    key: 'cantilever',
+    category: 'storage',
+    label: 'Cantilever',
+    defaultWidth: 400,
+    defaultLength: 100,
+    resizable: true,
+    render: Cantilever,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS, ADDRESS_FIELD],
+  },
+
+  // --- Equipamentos (Fase 8) ---
+  'reach-truck': {
+    key: 'reach-truck',
+    category: 'equipment',
+    label: 'Reach truck',
+    defaultWidth: 115,
+    defaultLength: 250,
+    resizable: false,
+    render: ReachTruck,
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD, ...EQUIPMENT_SPEC_FIELDS],
+  },
+  tug: {
+    key: 'tug',
+    category: 'equipment',
+    label: 'Rebocador',
+    defaultWidth: 70,
+    defaultLength: 130,
+    resizable: false,
+    render: Tug,
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD, ...EQUIPMENT_SPEC_FIELDS],
+  },
+  'order-picker': {
+    key: 'order-picker',
+    category: 'equipment',
+    label: 'Order picker',
+    defaultWidth: 90,
+    defaultLength: 200,
+    resizable: false,
+    render: OrderPicker,
+    propertyFields: [...BASE_FIELDS, EQUIPMENT_CODE_FIELD, ...EQUIPMENT_SPEC_FIELDS],
+  },
+
+  // --- Unitização (Fase 8) ---
+  box: {
+    key: 'box',
+    category: 'pallet',
+    label: 'Caixa',
+    defaultWidth: 40,
+    defaultLength: 30,
+    resizable: true,
+    render: Box,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS],
+  },
+  container: {
+    key: 'container',
+    category: 'pallet',
+    label: 'Container',
+    defaultWidth: 240,
+    defaultLength: 600,
+    resizable: true,
+    render: Container,
+    propertyFields: [...BASE_FIELDS, ...DIMENSION_FIELDS],
+  },
+  'cage-pallet': {
+    key: 'cage-pallet',
+    category: 'pallet',
+    label: 'Gaiola',
+    defaultWidth: 120,
+    defaultLength: 100,
+    resizable: false,
+    render: CagePallet,
+    propertyFields: [...BASE_FIELDS],
+  },
 }
 
 export const OBJECT_CATEGORIES_ORDER = ['structure', 'storage', 'pallet', 'equipment', 'area', 'flow'] as const
@@ -483,7 +652,7 @@ export const OBJECT_CATEGORIES_ORDER = ['structure', 'storage', 'pallet', 'equip
 export const CATEGORY_LABELS: Record<string, string> = {
   structure: 'Estrutura',
   storage: 'Armazenagem',
-  pallet: 'Paletes',
+  pallet: 'Unitização',
   equipment: 'Equipamentos',
   area: 'Áreas',
   flow: 'Fluxos',
