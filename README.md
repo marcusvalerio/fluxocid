@@ -72,7 +72,11 @@ npm run lint      # lint (oxlint)
       layout), painel do ambiente (dimensões, área total, ocupação
       estimada), aviso visual de objeto parcial/totalmente fora do
       ambiente, snapping às bordas do ambiente
-- [ ] Fase 3 — Biblioteca logística + operação + exportação
+- [x] Fase 3 — Biblioteca logística + operação + exportação: 19 novos
+      tipos de objeto com representação visual própria (armazenagem,
+      operação, fluxo, equipamentos — ver "Biblioteca de objetos"
+      abaixo), exportação do layout como imagem PNG preservando escala
+      e composição do ambiente
 - [ ] Fase 1 — Design system + refinamento visual (temas claro/escuro,
       tipografia, motion, correção definitiva do painel de propriedades
       no mobile)
@@ -84,8 +88,23 @@ responsável do produto.
 
 ## Biblioteca de objetos
 
-Estrutura (parede, porta, doca) · Armazenagem (porta-paletes, corredor)
-· Paletes (pallet) · Equipamentos (empilhadeira, paleteira) · Áreas
-(recebimento, expedição, picking, staging, quarentena, devolução,
-armazenagem, circulação, administrativa, personalizada) · Fluxos (rota
-de circulação de pessoas, empilhadeiras ou materiais).
+- **Estrutura**: parede, porta, doca
+- **Armazenagem**: porta-paletes, corredor, estante, bloco de
+  armazenagem, área de picking, área de staging
+- **Paletes**: pallet
+- **Equipamentos**: empilhadeira, paleteira, carrinho de
+  carga/plataforma, esteira transportadora, bancada de separação, mesa
+  de packing, balança, impressora/estação de etiquetas, scanner/RF
+- **Áreas**: recebimento, expedição, picking, staging, quarentena,
+  devolução, armazenagem, circulação, administrativa, personalizada
+  (genérica, com seletor de tipo) · área de conferência, área de
+  expedição, área de recebimento (com representação visual própria)
+- **Fluxos**: rota de circulação de pessoas/empilhadeiras/materiais,
+  seta direcional, faixa de circulação, cruzamento, zona de segurança,
+  faixa de pedestres
+
+Todo objeto tem uma representação 2D própria (não um retângulo
+genérico) e se integra à infraestrutura existente do editor: inserir,
+selecionar, mover, rotacionar, redimensionar (quando aplicável),
+duplicar, excluir, undo/redo, snapping, seleção múltipla, persistência
+e touch.

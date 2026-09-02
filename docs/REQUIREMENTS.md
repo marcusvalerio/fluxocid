@@ -100,6 +100,16 @@ status (`DEFINIDO`, `PROPOSTO`).
 | RF-73 | O sistema deve computar e exibir a área ocupada (m²) de um objeto do tipo "área". | P1 | DEFINIDO |
 | RF-74 | Empilhadeiras e paleteiras devem permitir um código de identificação/patrimônio, independente do nome livre do objeto. | P1 | DEFINIDO |
 | RF-75 | O sistema deve sinalizar visualmente quando dois porta-paletes/corredores se sobrepõem, sem bloquear a edição — ver `docs/BUSINESS_RULES.md` BR-60. | P1 | DEFINIDO |
+| RF-76 | O usuário deve poder exportar o layout atual como imagem (PNG), preservando a escala e a composição do ambiente (piso, grid, objetos), sem os elementos de edição (seleção, transformer, guias, réguas). | P1 | DEFINIDO |
+
+### 1.8 Biblioteca logística ampliada (Fase 3)
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-80 | A biblioteca deve incluir os seguintes objetos de armazenagem, cada um com representação visual própria: estante, bloco de armazenagem, área de picking, área de staging. | P1 | DEFINIDO |
+| RF-81 | A biblioteca deve incluir os seguintes objetos de operação, cada um com representação visual própria: esteira transportadora, bancada de separação, mesa de packing, balança, impressora/estação de etiquetas, scanner/RF, área de conferência, área de expedição, área de recebimento. | P1 | DEFINIDO |
+| RF-82 | A biblioteca deve incluir os seguintes objetos de fluxo, cada um com representação visual própria: seta direcional, faixa de circulação, cruzamento, zona de segurança, faixa de pedestres. | P1 | DEFINIDO |
+| RF-83 | A biblioteca deve incluir um objeto de equipamento "carrinho de carga/plataforma", com representação visual própria. | P1 | DEFINIDO |
 
 ## 2. Requisitos não funcionais
 

@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Check,
   Copy,
+  Download,
   Grid3x3,
   Magnet,
   Minus,
@@ -206,6 +207,9 @@ export function EditorPage() {
               }}
             >
               <Warehouse size={18} />
+            </IconButton>
+            <IconButton label="Exportar como imagem (PNG)" onClick={() => canvasHandleRef.current?.exportPng()}>
+              <Download size={18} />
             </IconButton>
           </div>
 

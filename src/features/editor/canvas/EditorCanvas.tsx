@@ -4,6 +4,7 @@ import type Konva from 'konva'
 import { Environment } from './Environment'
 import { Grid } from './Grid'
 import { ObjectNode } from './ObjectNode'
+import { ObjectRenderStatic } from './ObjectRenderStatic'
 import { RULER_SIZE, Rulers } from './Rulers'
 import { GuideLines, type SnapGuides } from './GuideLines'
 import { SelectionTransformer } from './SelectionTransformer'
@@ -30,6 +31,7 @@ export interface EditorCanvasHandle {
   zoomIn: () => void
   zoomOut: () => void
   fitToView: () => void
+  exportPng: () => void
 }
 
 interface EditorCanvasProps {
@@ -54,7 +56,9 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
   const marqueeStartWorldRef = useRef<{ x: number; y: number } | null>(null)
   const marqueeShiftRef = useRef(false)
   const nodesById = useRef<Map<string, Konva.Group>>(new Map())
+  const exportStageRef = useRef<Konva.Stage>(null)
 
+  const layoutName = useEditorStore((s) => s.layoutName)
   const objects = useEditorStore((s) => s.objects)
   const selectedIds = useEditorStore((s) => s.selectedIds)
   const selectObject = useEditorStore((s) => s.selectObject)
@@ -172,9 +176,21 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
         const fit = computeFitCamera()
         if (fit) setCamera(fit)
       },
+      exportPng: () => {
+        const stage = exportStageRef.current
+        if (!stage) return
+        const dataUrl = stage.toDataURL({ mimeType: 'image/png', pixelRatio: 2 })
+        const safeName = (layoutName || 'layout').trim().replace(/[^\p{L}\p{N}\- _]/gu, '') || 'layout'
+        const link = document.createElement('a')
+        link.href = dataUrl
+        link.download = `${safeName}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registerHandle, size, camera, scalePxPerMeter, addObject, setCamera, envWidthPx, envHeightPx])
+  }, [registerHandle, size, camera, scalePxPerMeter, addObject, setCamera, envWidthPx, envHeightPx, layoutName])
 
   // Auto-fit once per layout load, as soon as the container has been measured — so opening a
   // layout always starts framed on its environment instead of wherever the camera last was.
@@ -472,6 +488,36 @@ export function EditorCanvas({ registerHandle }: EditorCanvasProps) {
       {cursorWorldM && (
         <div className="hidden md:block absolute bottom-3 left-1/2 -translate-x-1/2 bg-surface/95 border border-border rounded-md shadow-sm px-3 py-1.5 text-xs text-text-secondary font-medium pointer-events-none">
           X: {cursorWorldM.x.toFixed(2)} m &nbsp;·&nbsp; Y: {cursorWorldM.y.toFixed(2)} m
+        </div>
+      )}
+      {envWidthPx > 0 && envHeightPx > 0 && (
+        <div
+          aria-hidden
+          style={{ position: 'fixed', top: -99999, left: -99999, pointerEvents: 'none' }}
+        >
+          <Stage ref={exportStageRef} width={envWidthPx} height={envHeightPx}>
+            <Layer listening={false}>
+              <Environment widthPx={envWidthPx} heightPx={envHeightPx} zoom={1} />
+              {gridVisible && (
+                <Grid
+                  pxPerMeter={scalePxPerMeter}
+                  camera={{ x: 0, y: 0, zoom: 1 }}
+                  stageWidth={envWidthPx}
+                  stageHeight={envHeightPx}
+                  envWidthPx={envWidthPx}
+                  envHeightPx={envHeightPx}
+                />
+              )}
+            </Layer>
+            <Layer listening={false}>
+              {objects
+                .slice()
+                .sort((a, b) => a.zIndex - b.zIndex)
+                .map((obj) => (
+                  <ObjectRenderStatic key={obj.id} obj={obj} pxPerMeter={scalePxPerMeter} />
+                ))}
+            </Layer>
+          </Stage>
         </div>
       )}
     </div>
