@@ -115,10 +115,14 @@
   docas ficam sobre paredes por definição, paredes se encontram em
   cantos, e equipamentos são móveis — incluir essas combinações geraria
   falsos positivos. Ver `src/shared/lib/spatialRules.ts`.
-- BR-61 (futuro): Corredores têm uma largura mínima recomendada
-  associada ao tipo de equipamento que circula neles — regra a ser
-  parametrizada quando uma fase de regras espaciais mais completa for
-  priorizada.
+- BR-61 (implementada, Fase 8): Corredores têm um tipo de tráfego
+  (`properties.corridorType`: pedestres/empilhadeira/misto/pallets/
+  picking) e uma largura mínima recomendada associada a esse tipo — ver
+  `CORRIDOR_MIN_WIDTH_CM` em `src/shared/lib/spatialRules.ts`. São
+  figuras de referência geral (não uma norma certificada), usadas apenas
+  para sinalizar (`findNarrowCorridors`), nunca para bloquear a
+  colocação. O painel de propriedades exibe a recomendação calculada
+  para o tipo selecionado.
 - BR-62 (P8, preparação): Empilhadeira, paleteira e carrinho de
   carga/plataforma carregam capacidade (kg), raio de giro (m) e
   largura mínima de corredor (m) como propriedades informativas
@@ -168,3 +172,50 @@
   conexões sem associação completa não aparecem no Layout (apenas na
   própria Prancheta de Fluxo). É somente leitura: não é selecionável
   nem editável a partir do Layout. Ver `src/features/editor/canvas/FlowOverlay.tsx`.
+
+## 10. Fase 8 — Inteligência visual e logística
+
+- BR-90: Todo objeto da biblioteca tem um desenho técnico 2D em vista
+  superior (nunca um quadrado colorido genérico ou emoji) renderizado
+  pelo **mesmo componente React/Konva** em três lugares: card da
+  biblioteca (`ObjectThumbnail`), objeto no canvas (`ObjectNode`) e
+  exportação PNG (`ObjectRenderStatic`) — um único sistema de símbolos
+  (`OBJECT_CATALOG[type].render`), nunca implementações visuais
+  divergentes para o mesmo tipo. Ver `src/features/editor/objects/`.
+- BR-91: A biblioteca cobre as categorias Estrutura, Armazenagem,
+  Equipamentos e Unitização (rótulo de exibição da categoria interna
+  `pallet`) com múltiplas variantes por categoria (ex.: armazenagem:
+  porta-paletes, drive-in, push-back, flow rack, cantilever, estante,
+  bloco de armazenagem) — cada tipo tem um desenho técnico distinto o
+  suficiente para ser reconhecível sem depender do rótulo de texto.
+- BR-92: Corredores têm um sentido de circulação
+  (`properties.direction`: mão única/mão dupla), puramente informativo
+  nesta fase — ainda não há validação de fluxo unidirecional.
+- BR-93: Regras espaciais expandidas (todas em
+  `src/shared/lib/spatialRules.ts`, agregadas por
+  `computeSpatialViolations`), cada uma com severidade 🟡 atenção ou 🔴
+  conflito e mensagem legível referenciando o endereço/código do objeto
+  quando definido:
+  - corredor bloqueado: objeto de armazenagem/estrutura/equipamento
+    cujo bounding box invade um corredor;
+  - corredor muito estreito: largura abaixo da recomendação do seu
+    tipo (ver BR-61);
+  - conflito equipamento×estrutura: equipamento móvel (empilhadeira,
+    paleteira, reach truck, rebocador, order picker, carrinho)
+    sobrepondo parede/coluna — portas/portões/docas são excluídos por
+    serem aberturas que o equipamento deve atravessar;
+  - área operacional sobreposta: duas zonas logísticas (Área, Área de
+    picking/staging/conferência/expedição/recebimento) com footprint
+    sobreposto;
+  - doca obstruída: objeto cobrindo o footprint de uma doca — crítico
+    quando a cobertura é predominante (≥60% da área da doca), atenção
+    quando parcial.
+  Nenhuma dessas regras bloqueia a ação do usuário — apenas sinaliza
+  visualmente (contorno tracejado no canvas) e em texto (painel de
+  métricas).
+- BR-94: O painel de métricas ("Métricas do projeto") exibe também os
+  alertas de `computeSpatialViolations` como lista com ícone/cor por
+  severidade, com um estado neutro "Nenhum conflito detectado" quando
+  vazio — reaproveita o painel/toggle já existente em vez de criar uma
+  tela nova, mantendo a prancheta como foco principal da interface. Ver
+  `src/features/editor/metrics-panel/MetricsPanel.tsx`.
