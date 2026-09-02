@@ -1,5 +1,5 @@
 import { Arrow, Label, Tag, Text } from 'react-konva'
-import { FLOW_NODE_SIZE, type FlowConnection, type FlowConnectionType, type FlowNode } from '../../../types/flow'
+import { FLOW_CONNECTION_STYLE, FLOW_NODE_SIZE, type FlowConnection, type FlowNode } from '../../../types/flow'
 
 interface FlowConnectionShapeProps {
   connection: FlowConnection
@@ -7,14 +7,6 @@ interface FlowConnectionShapeProps {
   toNode: FlowNode
   selected: boolean
   onSelect: (id: string) => void
-}
-
-const CONNECTION_STYLE: Record<FlowConnectionType, { stroke: string; strokeWidth: number; dash?: number[] }> = {
-  material: { stroke: '#334155', strokeWidth: 2 },
-  pallet: { stroke: '#8B5E34', strokeWidth: 3 },
-  people: { stroke: '#0D9488', strokeWidth: 2, dash: [2, 4] },
-  forklift: { stroke: '#2563EB', strokeWidth: 3 },
-  picking: { stroke: '#7C3AED', strokeWidth: 2, dash: [8, 4] },
 }
 
 const { width, height } = FLOW_NODE_SIZE
@@ -34,7 +26,7 @@ function clipToBorder(cx: number, cy: number, towardX: number, towardY: number):
 }
 
 export function FlowConnectionShape({ connection, fromNode, toNode, selected, onSelect }: FlowConnectionShapeProps) {
-  const style = CONNECTION_STYLE[connection.flowType]
+  const style = FLOW_CONNECTION_STYLE[connection.flowType]
   const fromCenter = { x: fromNode.x + width / 2, y: fromNode.y + height / 2 }
   const toCenter = { x: toNode.x + width / 2, y: toNode.y + height / 2 }
   const start = clipToBorder(fromCenter.x, fromCenter.y, toCenter.x, toCenter.y)

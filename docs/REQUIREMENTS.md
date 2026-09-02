@@ -124,6 +124,7 @@ status (`DEFINIDO`, `PROPOSTO`).
 | RF-95 | Excluir um nó deve excluir também as conexões que o referenciam (nunca deixar uma conexão "pendurada"). | MVP | DEFINIDO |
 | RF-96 | O usuário deve poder associar um nó de fluxo a uma área/objeto já existente na Prancheta de Layout, sem duplicar os dados do objeto — apenas uma referência (`linkedObjectId`). | P1 | DEFINIDO |
 | RF-97 | Layout e Fluxo devem ser persistidos juntos, no mesmo projeto (mesmo layout salvo), e restaurados juntos ao reabrir. | MVP | DEFINIDO |
+| RF-98 | O usuário deve poder exibir/ocultar, sobre a Prancheta de Layout, as conexões de fluxo cujos dois extremos estejam associados a áreas/objetos do Layout — sem bloquear a edição do Layout. | P1 | DEFINIDO |
 
 ## 2. Requisitos não funcionais
 

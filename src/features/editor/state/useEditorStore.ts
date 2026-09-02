@@ -37,6 +37,9 @@ interface EditorState {
   camera: Camera
   snapEnabled: boolean
   gridVisible: boolean
+  /** Layout board: shows connections from the Fluxo board whose endpoints are both linked to a
+   * Layout object, overlaid on the canvas (P7 — "visualizar o fluxo sobre o Layout"). */
+  flowOverlayVisible: boolean
   /** Mobile: entered via long-press on an object; while true, taps toggle selection instead of replacing it. */
   multiSelectMode: boolean
   saveStatus: SaveStatus
@@ -76,6 +79,7 @@ interface EditorState {
   toggleGrid: () => void
   setSaveStatus: (status: SaveStatus) => void
   setMultiSelectMode: (enabled: boolean) => void
+  toggleFlowOverlay: () => void
 
   addFlowNode: (type: FlowNodeType, x: number, y: number) => void
   moveFlowNodeLive: (id: string, x: number, y: number) => void
@@ -107,6 +111,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   camera: { x: 0, y: 0, zoom: 1 },
   snapEnabled: true,
   gridVisible: true,
+  flowOverlayVisible: false,
   multiSelectMode: false,
   saveStatus: 'idle',
   history: { past: [], future: [] },
@@ -433,6 +438,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   toggleGrid: () => set({ gridVisible: !get().gridVisible }),
   setSaveStatus: (status) => set({ saveStatus: status }),
   setMultiSelectMode: (enabled) => set({ multiSelectMode: enabled }),
+  toggleFlowOverlay: () => set({ flowOverlayVisible: !get().flowOverlayVisible }),
 
   // --- Fluxo board — no undo history (not required by product scope); every mutation commits
   // straight to state, mirroring the simpler "diagram" nature of this board vs. the spatial one. ---

@@ -17,6 +17,7 @@ import {
   Undo2,
   Maximize,
   Warehouse,
+  Workflow,
 } from 'lucide-react'
 import { EditorCanvas, type EditorCanvasHandle } from './canvas/EditorCanvas'
 import { EnvironmentPanel } from './environment-panel/EnvironmentPanel'
@@ -74,6 +75,8 @@ export function EditorPage() {
   const setSnapEnabled = useEditorStore((s) => s.setSnapEnabled)
   const gridVisible = useEditorStore((s) => s.gridVisible)
   const toggleGrid = useEditorStore((s) => s.toggleGrid)
+  const flowOverlayVisible = useEditorStore((s) => s.flowOverlayVisible)
+  const toggleFlowOverlay = useEditorStore((s) => s.toggleFlowOverlay)
   const saveStatus = useEditorStore((s) => s.saveStatus)
   const setSaveStatus = useEditorStore((s) => s.setSaveStatus)
   const layoutId2 = useEditorStore((s) => s.layoutId)
@@ -324,6 +327,9 @@ export function EditorPage() {
             </IconButton>
             <IconButton label="Alternar snap" active={snapEnabled} onClick={() => setSnapEnabled(!snapEnabled)}>
               <Magnet size={18} />
+            </IconButton>
+            <IconButton label="Mostrar fluxo sobre o layout" active={flowOverlayVisible} onClick={toggleFlowOverlay}>
+              <Workflow size={18} />
             </IconButton>
             <IconButton
               label="Configurar ambiente"

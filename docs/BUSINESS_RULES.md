@@ -154,3 +154,9 @@
 - BR-85: A Prancheta de Fluxo não tem histórico de undo/redo nesta
   fase (diferente do Layout) — cada mutação é aplicada e persistida
   diretamente.
+- BR-86: A sobreposição do fluxo no Layout (toggle "Mostrar fluxo
+  sobre o layout") só desenha uma conexão quando **ambos** os nós
+  extremos estão associados a um objeto do Layout existente —
+  conexões sem associação completa não aparecem no Layout (apenas na
+  própria Prancheta de Fluxo). É somente leitura: não é selecionável
+  nem editável a partir do Layout. Ver `src/features/editor/canvas/FlowOverlay.tsx`.

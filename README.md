@@ -105,7 +105,9 @@ npm run lint      # lint (oxlint)
       empilhadeiras/picking) via alça de arraste, associação de um nó
       a uma área/objeto do Layout (sem duplicar dados), persistência
       de Layout + Fluxo no mesmo projeto
-- [ ] P7 — Visualizar o fluxo sobreposto ao Layout
+- [x] P7 — Visualizar o fluxo sobreposto ao Layout: toggle "Mostrar
+      fluxo sobre o layout" desenha as conexões (cor/estilo por tipo)
+      entre os objetos associados, somente leitura
 - [ ] P8 — Evoluir regras espaciais e métricas
 - [ ] P9 — QA completo
 

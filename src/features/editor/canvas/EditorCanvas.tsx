@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Rect } from 'react-konva'
 import type Konva from 'konva'
 import { Environment } from './Environment'
+import { FlowOverlay } from './FlowOverlay'
 import { Grid } from './Grid'
 import { ObjectNode } from './ObjectNode'
 import { ObjectRenderStatic } from './ObjectRenderStatic'
@@ -76,6 +77,9 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
   const setCamera = useEditorStore((s) => s.setCamera)
   const scalePxPerMeter = useEditorStore((s) => s.scalePxPerMeter)
   const gridVisible = useEditorStore((s) => s.gridVisible)
+  const flowOverlayVisible = useEditorStore((s) => s.flowOverlayVisible)
+  const flowNodes = useEditorStore((s) => s.flowNodes)
+  const flowConnections = useEditorStore((s) => s.flowConnections)
   const addObject = useEditorStore((s) => s.addObject)
   const envWidthM = useEditorStore((s) => s.envWidthM)
   const envHeightM = useEditorStore((s) => s.envHeightM)
@@ -463,6 +467,16 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
               />
             )}
           </Layer>
+          {flowOverlayVisible && (
+            <Layer listening={false}>
+              <FlowOverlay
+                flowConnections={flowConnections}
+                flowNodes={flowNodes}
+                objects={objects}
+                pxPerMeter={scalePxPerMeter}
+              />
+            </Layer>
+          )}
           <Layer>
             {objects
               .slice()

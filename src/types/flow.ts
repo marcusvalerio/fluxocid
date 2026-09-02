@@ -87,3 +87,13 @@ export const FLOW_CONNECTION_TYPE_LABELS: Record<FlowConnectionType, string> = {
   forklift: 'Empilhadeiras',
   picking: 'Picking',
 }
+
+/** Shared between the Fluxo board's own connection arrows and the Layout board's flow overlay
+ * (P7) — one visual language for "this is a material/pallet/people/forklift/picking flow". */
+export const FLOW_CONNECTION_STYLE: Record<FlowConnectionType, { stroke: string; strokeWidth: number; dash?: number[] }> = {
+  material: { stroke: '#334155', strokeWidth: 2 },
+  pallet: { stroke: '#8B5E34', strokeWidth: 3 },
+  people: { stroke: '#0D9488', strokeWidth: 2, dash: [2, 4] },
+  forklift: { stroke: '#2563EB', strokeWidth: 3 },
+  picking: { stroke: '#7C3AED', strokeWidth: 2, dash: [8, 4] },
+}
