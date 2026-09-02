@@ -20,10 +20,8 @@ const MIN_ZOOM = 0.2
 const MAX_ZOOM = 4
 const MARQUEE_MIN_PX = 4
 const EXPORT_PADDING_PX = 24
-/** Matches --color-surface-alt in both themes — the "outside the environment" tone, so the
- * export's background reads the same as the live canvas instead of defaulting to transparent. */
-const EXPORT_BG_LIGHT = '#e3e6eb'
-const EXPORT_BG_DARK = '#1b1d24'
+/** The exported layout uses an opaque, blank paper-like backdrop rather than transparency. */
+const EXPORT_BG = '#F6F4F0'
 
 function getDistance(p1: { x: number; y: number }, p2: { x: number; y: number }) {
   return Math.hypot(p1.x - p2.x, p1.y - p2.y)
@@ -93,12 +91,9 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
     for (const o of objects) map.set(o.id, getBoundsStatus(o, envWidthCm, envHeightCm))
     return map
   }, [objects, envWidthM, envHeightM])
-  const isDarkMode = useIsDarkMode()
+  useIsDarkMode()
 
-  // The exported PNG must never crop an object that's (legitimately, per BR-02b) placed partly
-  // or fully outside the environment — so the export canvas is the union of the environment
-  // rect and every object's bounding box, not just the environment. Objects fully inside the
-  // common case never change this from the plain envWidthPx x envHeightPx rectangle.
+  // Keep the complete environment and any object that legitimately extends beyond it in the export.
   const exportBoundsPx = useMemo(() => {
     let minX = 0
     let minY = 0
@@ -132,17 +127,11 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
     return () => observer.disconnect()
   }, [])
 
-  // Always call the current render's handleMouseUp (not a stale one) from the window-level
-  // listener below, since it closes over per-render state like marqueeRect.
   const latestHandleMouseUp = useRef(() => {})
   useEffect(() => {
     latestHandleMouseUp.current = handleMouseUp
   })
 
-  // A drag (pan or marquee) should always end cleanly on mouseup, even if the pointer left the
-  // canvas element first — e.g. a spurious native 'mouseleave' from an unrelated layout reflow,
-  // or the user releasing past the canvas edge. Konva's own onMouseUp only fires while the
-  // pointer is still over the Stage, so this window-level listener is the reliable fallback.
   useEffect(() => {
     function onWindowMouseUp() {
       if (mouseModeRef.current !== 'none') {
@@ -153,7 +142,6 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
     return () => window.removeEventListener('mouseup', onWindowMouseUp)
   }, [])
 
-  // Tracks the spacebar for desktop "hold to pan" — ignored while typing in a form field.
   useEffect(() => {
     function isEditableTarget(target: EventTarget | null) {
       const el = target as HTMLElement | null
@@ -183,7 +171,6 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
     return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z))
   }
 
-  /** Zoom/pan so the whole environment rectangle is framed with padding, clear of the rulers. */
   function computeFitCamera(): Partial<Camera> | null {
     const padding = 32
     const availWidth = size.width - RULER_SIZE - padding * 2
@@ -217,21 +204,47 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
       exportPng: () => {
         const stage = exportStageRef.current
         if (!stage) return
-        const dataUrl = stage.toDataURL({ mimeType: 'image/png', pixelRatio: 2 })
-        const safeName = (layoutName || 'layout').trim().replace(/[^\p{L}\p{N}\- _]/gu, '') || 'layout'
-        const link = document.createElement('a')
-        link.href = dataUrl
-        link.download = `${safeName}.png`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+
+        const canvas = stage.toCanvas({ pixelRatio: 2 })
+        canvas.toBlob(async (blob) => {
+          if (!blob) return
+          const safeName = (layoutName || 'layout').trim().replace(/[^\p{L}\p{N}\- _]/gu, '') || 'layout'
+          const fileName = `${safeName}.png`
+          const file = new File([blob], fileName, { type: 'image/png' })
+
+          // On mobile Safari, the download attribute on a data/blob URL is unreliable.
+          // Prefer the native share sheet when file sharing is available so the user can
+          // explicitly save the PNG to Photos/Files. Desktop and browsers without sharing
+          // keep the normal direct-download behavior.
+          const canShareFile = typeof navigator !== 'undefined'
+            && typeof navigator.share === 'function'
+            && typeof navigator.canShare === 'function'
+            && navigator.canShare({ files: [file] })
+
+          if (canShareFile) {
+            try {
+              await navigator.share({ files: [file], title: fileName })
+              return
+            } catch (error) {
+              if (error instanceof DOMException && error.name === 'AbortError') return
+            }
+          }
+
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = fileName
+          link.rel = 'noopener'
+          document.body.appendChild(link)
+          link.click()
+          link.remove()
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+        }, 'image/png')
       },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registerHandle, size, camera, scalePxPerMeter, addObject, setCamera, envWidthPx, envHeightPx, layoutName])
 
-  // Auto-fit once per layout load, as soon as the container has been measured — so opening a
-  // layout always starts framed on its environment instead of wherever the camera last was.
   const lastFittedLayoutId = useRef<string | null>(null)
   const storeLayoutId = useEditorStore((s) => s.layoutId)
   useEffect(() => {
@@ -263,8 +276,6 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
       y: pointer.y - worldY * newZoom,
     })
   }
-
-  // --- Mouse: space/middle-drag pans; plain drag from empty canvas draws a marquee selection. ---
 
   function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent>) {
     const stage = e.target.getStage()
@@ -350,8 +361,6 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
     setCursor(spaceDownRef.current ? 'grab' : 'default')
   }
 
-  // --- Touch: single-finger drag from empty canvas pans; two-finger pinch zooms. ---
-
   function handleTouchStart(e: Konva.KonvaEventObject<TouchEvent>) {
     const stage = e.target.getStage()
     const touches = e.evt.touches
@@ -361,8 +370,6 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
       singleTouchPan.current = null
     }
     if (touches.length >= 2) {
-      // A second finger landing while an object drag is active (e.g. a pinch that starts near
-      // a small object) hands the gesture to pinch-zoom instead of letting them fight.
       nodesById.current.forEach((node) => {
         if (node.isDragging()) node.stopDrag()
       })
@@ -383,8 +390,6 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
     if (touches.length !== 2) return
     e.evt.preventDefault()
 
-    // A pinch starting with a finger on/near a small object can leave that object's own
-    // draggable Group mid-drag; let the pinch own the gesture exclusively from here on.
     nodesById.current.forEach((node) => {
       if (node.isDragging()) node.stopDrag()
     })
@@ -548,16 +553,13 @@ export function EditorCanvas({ registerHandle, onDraggingChange }: EditorCanvasP
         >
           <Stage ref={exportStageRef} width={exportBoundsPx.width} height={exportBoundsPx.height}>
             <Layer listening={false}>
-              {/* Explicit opaque backdrop covering the full canvas — toDataURL renders exactly
-                  what's drawn, nothing more, so without this any pixel not covered by the
-                  environment/objects (e.g. the padding margin, or gaps if a future change ever
-                  left a hole) would export as transparent instead of matching the live canvas. */}
+              {/* Opaque paper backdrop: the PNG always contains a blank prancheta, never transparency. */}
               <Rect
                 x={0}
                 y={0}
                 width={exportBoundsPx.width}
                 height={exportBoundsPx.height}
-                fill={isDarkMode ? EXPORT_BG_DARK : EXPORT_BG_LIGHT}
+                fill={EXPORT_BG}
               />
             </Layer>
             <Layer listening={false} x={exportBoundsPx.offsetX} y={exportBoundsPx.offsetY}>
