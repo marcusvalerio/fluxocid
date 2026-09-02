@@ -73,7 +73,7 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
                   value={value}
                   placeholder={def.label}
                   onChange={(e) => setProperty(object.id, field.key, e.target.value)}
-                  className="w-32 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-32 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>
             )
@@ -115,7 +115,7 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
                 <select
                   value={value}
                   onChange={(e) => setProperty(object.id, field.key, e.target.value)}
-                  className="w-32 rounded border border-border bg-white px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-32 rounded border border-border bg-white px-2 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   {field.options?.map((opt) => (
                     <option key={opt.value} value={opt.value}>
