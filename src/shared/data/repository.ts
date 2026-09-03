@@ -14,13 +14,13 @@ export function getLocalLayoutRepository(): LayoutRepository {
 
 /** Switches the active backend to the signed-in user's remote projects (Cloudflare Worker + D1).
  * Call right after a successful login/session restore. */
-export function useRemoteRepository(userId: string): void {
+export function activateRemoteRepository(userId: string): void {
   active = new RemoteLayoutRepository(userId)
 }
 
 /** Switches back to the local-only backend — call on logout so no further remote calls are made
  * (and so a subsequent login for a different user can't see the previous session's data). */
-export function useLocalRepository(): void {
+export function activateLocalRepository(): void {
   active = localRepository
 }
 
