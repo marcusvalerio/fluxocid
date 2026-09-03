@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { AlertTriangle, BringToFront, Copy, RotateCcw, RotateCw, SendToBack, Trash2 } from 'lucide-react'
 import { OBJECT_CATALOG } from '../objects/catalog'
 import { useEditorStore } from '../state/useEditorStore'
@@ -25,9 +26,26 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
   const rotateObject = useEditorStore((s) => s.rotateObject)
   const commitObject = useEditorStore((s) => s.commitObject)
   const objects = useEditorStore((s) => s.objects)
+  const [textDrafts, setTextDrafts] = useState<Record<string, string>>({})
 
   const def = OBJECT_CATALOG[object.objectType]
   const boundsWarning = boundsStatus ? BOUNDS_WARNING_TEXT[boundsStatus] : undefined
+
+  useEffect(() => {
+    const next: Record<string, string> = {}
+    for (const field of def.propertyFields) {
+      if (field.kind !== 'text') continue
+      next[field.key] = field.key === 'name' ? (object.name ?? '') : String(object.properties[field.key] ?? '')
+    }
+    setTextDrafts(next)
+  }, [object.id, object.objectType])
+
+  function commitTextField(key: string) {
+    const value = textDrafts[key] ?? ''
+    const current = key === 'name' ? (object.name ?? '') : String(object.properties[key] ?? '')
+    if (value === current) return
+    setProperty(object.id, key, value)
+  }
 
   function bringToFront() {
     if (objects.length < 2) return
@@ -84,11 +102,23 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
       <div className="space-y-3">
         {def.propertyFields.map((field) => {
           if (field.kind === 'text') {
-            const value = field.key === 'name' ? (object.name ?? '') : String(object.properties[field.key] ?? '')
+            const value = textDrafts[field.key] ?? ''
             return (
               <label key={field.key} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-text-secondary">{field.label}</span>
-                <input type="text" value={value} placeholder={def.label} onChange={(e) => setProperty(object.id, field.key, e.target.value)} className="w-32 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40" />
+                <input
+                  type="text"
+                  value={value}
+                  placeholder={def.label}
+                  onChange={(e) => setTextDrafts((current) => ({ ...current, [field.key]: e.target.value }))}
+                  onBlur={() => commitTextField(field.key)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur()
+                    }
+                  }}
+                  className="w-32 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
               </label>
             )
           }
