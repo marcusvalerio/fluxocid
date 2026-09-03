@@ -163,6 +163,79 @@ describe('useEditorStore', () => {
     })
   })
 
+  describe('z-order (Fase 9)', () => {
+    function addThree() {
+      useEditorStore.getState().addObject('pallet', 100, 100)
+      useEditorStore.getState().addObject('pallet', 200, 200)
+      useEditorStore.getState().addObject('pallet', 300, 300)
+      const [a, b, c] = useEditorStore.getState().objects
+      return { a, b, c }
+    }
+
+    function orderedIds() {
+      return [...useEditorStore.getState().objects].sort((x, y) => x.zIndex - y.zIndex).map((o) => o.id)
+    }
+
+    it('bringSelectedToFront moves the selected object above all others', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectObject(a.id)
+      useEditorStore.getState().bringSelectedToFront()
+      expect(orderedIds()).toEqual([b.id, c.id, a.id])
+    })
+
+    it('sendSelectedToBack moves the selected object below all others', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectObject(c.id)
+      useEditorStore.getState().sendSelectedToBack()
+      expect(orderedIds()).toEqual([c.id, a.id, b.id])
+    })
+
+    it('bringSelectedForward swaps with the next-higher unselected neighbor', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectObject(a.id)
+      useEditorStore.getState().bringSelectedForward()
+      expect(orderedIds()).toEqual([b.id, a.id, c.id])
+    })
+
+    it('bringSelectedForward is a no-op when already at the front', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectObject(c.id)
+      useEditorStore.getState().bringSelectedForward()
+      expect(orderedIds()).toEqual([a.id, b.id, c.id])
+    })
+
+    it('sendSelectedBackward swaps with the next-lower unselected neighbor', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectObject(c.id)
+      useEditorStore.getState().sendSelectedBackward()
+      expect(orderedIds()).toEqual([a.id, c.id, b.id])
+    })
+
+    it('preserves relative order among multiple selected objects when brought to front', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectMany([a.id, b.id], false)
+      useEditorStore.getState().bringSelectedToFront()
+      expect(orderedIds()).toEqual([c.id, a.id, b.id])
+    })
+
+    it('does nothing when nothing is selected', () => {
+      addThree()
+      const before = orderedIds()
+      useEditorStore.getState().bringSelectedToFront()
+      expect(orderedIds()).toEqual(before)
+    })
+
+    it('supports undo after a z-order change', () => {
+      const { a, b, c } = addThree()
+      const before = orderedIds()
+      useEditorStore.getState().selectObject(a.id)
+      useEditorStore.getState().bringSelectedToFront()
+      expect(orderedIds()).toEqual([b.id, c.id, a.id])
+      useEditorStore.getState().undo()
+      expect(orderedIds()).toEqual(before)
+    })
+  })
+
   describe('align and distribute', () => {
     it('aligns selected objects to the left edge of the group bounding box', () => {
       useEditorStore.getState().addObject('pallet', 100, 100) // -> x=40

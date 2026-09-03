@@ -68,6 +68,13 @@ interface EditorState {
   deleteSelected: () => void
   duplicateSelected: () => void
   rotateSelected: (deltaDeg: number) => void
+  /** Z-order (Fase 9 § Z-order) — all four act on the current multi-selection, and always
+   * renumber zIndex to a clean 0..n-1 sequence across every object (not just the selected ones),
+   * so stacking order never drifts after repeated use. */
+  bringSelectedToFront: () => void
+  sendSelectedToBack: () => void
+  bringSelectedForward: () => void
+  sendSelectedBackward: () => void
   moveManyLive: (updates: { id: string; x: number; y: number }[]) => void
   commitMany: (updates: { id: string; patch: Partial<LayoutObject> }[]) => void
   alignSelected: (mode: AlignMode) => void
@@ -302,6 +309,74 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       objects: objects.map((o) =>
         ids.has(o.id) ? { ...o, rotationDeg: normalizeDeg(o.rotationDeg + deltaDeg) } : o,
       ),
+      history: { past: [...history.past, snapshot(objects)].slice(-MAX_HISTORY), future: [] },
+    })
+  },
+
+  bringSelectedToFront: () => {
+    const { objects, history, selectedIds } = get()
+    if (selectedIds.length === 0) return
+    const ids = new Set(selectedIds)
+    const order = [...objects].sort((a, b) => a.zIndex - b.zIndex)
+    const rest = order.filter((o) => !ids.has(o.id))
+    const selected = order.filter((o) => ids.has(o.id))
+    const reordered = [...rest, ...selected].map((o, i) => ({ ...o, zIndex: i }))
+    set({
+      objects: reordered,
+      history: { past: [...history.past, snapshot(objects)].slice(-MAX_HISTORY), future: [] },
+    })
+  },
+
+  sendSelectedToBack: () => {
+    const { objects, history, selectedIds } = get()
+    if (selectedIds.length === 0) return
+    const ids = new Set(selectedIds)
+    const order = [...objects].sort((a, b) => a.zIndex - b.zIndex)
+    const rest = order.filter((o) => !ids.has(o.id))
+    const selected = order.filter((o) => ids.has(o.id))
+    const reordered = [...selected, ...rest].map((o, i) => ({ ...o, zIndex: i }))
+    set({
+      objects: reordered,
+      history: { past: [...history.past, snapshot(objects)].slice(-MAX_HISTORY), future: [] },
+    })
+  },
+
+  bringSelectedForward: () => {
+    const { objects, history, selectedIds } = get()
+    if (selectedIds.length === 0) return
+    const ids = new Set(selectedIds)
+    const order = [...objects].sort((a, b) => a.zIndex - b.zIndex)
+    // Walk from the top down so the frontmost selected object moves first, letting each one
+    // "ripple" past its nearest unselected neighbor without fighting the others in this pass.
+    for (let i = order.length - 1; i >= 0; i--) {
+      const obj = order[i]
+      if (!obj || !ids.has(obj.id)) continue
+      const next = order[i + 1]
+      if (!next || ids.has(next.id)) continue
+      order[i] = next
+      order[i + 1] = obj
+    }
+    set({
+      objects: order.map((o, i) => ({ ...o, zIndex: i })),
+      history: { past: [...history.past, snapshot(objects)].slice(-MAX_HISTORY), future: [] },
+    })
+  },
+
+  sendSelectedBackward: () => {
+    const { objects, history, selectedIds } = get()
+    if (selectedIds.length === 0) return
+    const ids = new Set(selectedIds)
+    const order = [...objects].sort((a, b) => a.zIndex - b.zIndex)
+    for (let i = 0; i < order.length; i++) {
+      const obj = order[i]
+      if (!obj || !ids.has(obj.id)) continue
+      const prev = order[i - 1]
+      if (!prev || ids.has(prev.id)) continue
+      order[i] = prev
+      order[i - 1] = obj
+    }
+    set({
+      objects: order.map((o, i) => ({ ...o, zIndex: i })),
       history: { past: [...history.past, snapshot(objects)].slice(-MAX_HISTORY), future: [] },
     })
   },

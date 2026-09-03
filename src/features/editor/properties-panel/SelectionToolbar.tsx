@@ -7,6 +7,10 @@ import {
   AlignStartHorizontal,
   AlignStartVertical,
   AlignVerticalSpaceBetween,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronDown,
+  ChevronUp,
   Copy,
   RotateCcw,
   RotateCw,
@@ -22,6 +26,10 @@ export function SelectionToolbar() {
   const rotateSelected = useEditorStore((s) => s.rotateSelected)
   const duplicateSelected = useEditorStore((s) => s.duplicateSelected)
   const deleteSelected = useEditorStore((s) => s.deleteSelected)
+  const bringSelectedToFront = useEditorStore((s) => s.bringSelectedToFront)
+  const sendSelectedToBack = useEditorStore((s) => s.sendSelectedToBack)
+  const bringSelectedForward = useEditorStore((s) => s.bringSelectedForward)
+  const sendSelectedBackward = useEditorStore((s) => s.sendSelectedBackward)
 
   const count = selectedIds.length
   const canDistribute = count >= 3
@@ -66,6 +74,24 @@ export function SelectionToolbar() {
           </IconButton>
           <IconButton label="Alinhar à base" onClick={() => alignSelected('bottom')}>
             <AlignEndHorizontal size={18} />
+          </IconButton>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-medium text-text-secondary mb-2">Camadas</p>
+        <div className="grid grid-cols-4 gap-1">
+          <IconButton label="Trazer para frente" onClick={bringSelectedToFront}>
+            <ChevronsUp size={18} />
+          </IconButton>
+          <IconButton label="Avançar uma camada" onClick={bringSelectedForward}>
+            <ChevronUp size={18} />
+          </IconButton>
+          <IconButton label="Recuar uma camada" onClick={sendSelectedBackward}>
+            <ChevronDown size={18} />
+          </IconButton>
+          <IconButton label="Enviar para trás" onClick={sendSelectedToBack}>
+            <ChevronsDown size={18} />
           </IconButton>
         </div>
       </div>
