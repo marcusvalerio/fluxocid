@@ -4,6 +4,7 @@ import { Copy, LayoutGrid, LogOut, Pencil, Plus, Trash2 } from 'lucide-react'
 import { layoutRepository } from '../../shared/data/repository'
 import { useAuthStore } from '../auth/state/useAuthStore'
 import { DEFAULT_ENV_HEIGHT_M, DEFAULT_ENV_WIDTH_M } from '../editor/state/useEditorStore'
+import { MigrationBanner } from './MigrationBanner'
 import { Button } from '../../shared/ui/Button'
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog'
 import { Panel } from '../../shared/ui/Panel'
@@ -123,6 +124,8 @@ export function LayoutsListPage() {
 
       <main className="max-w-4xl mx-auto px-4 py-6">
         <h2 className="font-heading text-lg font-semibold text-text-primary mb-4">Meus projetos</h2>
+
+        <MigrationBanner onImported={refresh} />
 
         {creating && (
           <Panel className="p-4 mb-4">
