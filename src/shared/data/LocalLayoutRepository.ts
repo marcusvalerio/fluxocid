@@ -21,6 +21,15 @@ function writeAll(layouts: Layout[]): void {
 
 /** localStorage-backed implementation, used until Supabase credentials are configured (docs/TECH_STACK.md § 2). */
 export class LocalLayoutRepository implements LayoutRepository {
+  /** Serialize autosave writes so Layout and Fluxo can never overwrite each other concurrently. */
+  private writeQueue: Promise<void> = Promise.resolve()
+
+  private enqueueWrite(task: () => void): Promise<void> {
+    const next = this.writeQueue.then(task)
+    this.writeQueue = next.catch(() => undefined)
+    return next
+  }
+
   async listLayouts(): Promise<LayoutSummary[]> {
     return readAll()
       .map(({ id, organizationId, name, createdAt, updatedAt }) => ({
@@ -71,12 +80,14 @@ export class LocalLayoutRepository implements LayoutRepository {
   }
 
   async saveLayoutObjects(id: string, objects: LayoutObject[]): Promise<void> {
-    const layouts = readAll()
-    const layout = layouts.find((l) => l.id === id)
-    if (!layout) return
-    layout.objects = objects
-    layout.updatedAt = new Date().toISOString()
-    writeAll(layouts)
+    return this.enqueueWrite(() => {
+      const layouts = readAll()
+      const layout = layouts.find((l) => l.id === id)
+      if (!layout) return
+      layout.objects = objects
+      layout.updatedAt = new Date().toISOString()
+      writeAll(layouts)
+    })
   }
 
   async updateLayoutSettings(id: string, settings: Partial<Pick<Layout, 'widthM' | 'heightM'>>): Promise<void> {
@@ -89,13 +100,15 @@ export class LocalLayoutRepository implements LayoutRepository {
   }
 
   async saveFlowBoard(id: string, flowNodes: FlowNode[], flowConnections: FlowConnection[]): Promise<void> {
-    const layouts = readAll()
-    const layout = layouts.find((l) => l.id === id)
-    if (!layout) return
-    layout.flowNodes = flowNodes
-    layout.flowConnections = flowConnections
-    layout.updatedAt = new Date().toISOString()
-    writeAll(layouts)
+    return this.enqueueWrite(() => {
+      const layouts = readAll()
+      const layout = layouts.find((l) => l.id === id)
+      if (!layout) return
+      layout.flowNodes = flowNodes
+      layout.flowConnections = flowConnections
+      layout.updatedAt = new Date().toISOString()
+      writeAll(layouts)
+    })
   }
 }
 
