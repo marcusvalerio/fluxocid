@@ -6,10 +6,12 @@ interface FlowNodeShapeProps {
   node: FlowNode
   selected: boolean
   linked: boolean
+  editing: boolean
   onSelect: (id: string) => void
   onDragMove: (id: string, x: number, y: number) => void
   onDragEnd: (id: string, x: number, y: number) => void
   onHandleDragStart: (id: string, x: number, y: number) => void
+  onStartEdit: (id: string) => void
   registerRef: (id: string, node: Konva.Group | null) => void
 }
 
@@ -21,10 +23,12 @@ export function FlowNodeShape({
   node,
   selected,
   linked,
+  editing,
   onSelect,
   onDragMove,
   onDragEnd,
   onHandleDragStart,
+  onStartEdit,
   registerRef,
 }: FlowNodeShapeProps) {
   const color = FLOW_NODE_TYPE_COLORS[node.type]
@@ -40,6 +44,8 @@ export function FlowNodeShape({
       onDragEnd={(e) => onDragEnd(node.id, e.target.x(), e.target.y())}
       onClick={() => onSelect(node.id)}
       onTap={() => onSelect(node.id)}
+      onDblClick={() => onStartEdit(node.id)}
+      onDblTap={() => onStartEdit(node.id)}
     >
       <Rect
         width={width}
@@ -54,19 +60,21 @@ export function FlowNodeShape({
         shadowBlur={8}
       />
       <Rect x={0} y={0} width={6} height={height} fill={color} cornerRadius={[10, 0, 0, 10]} />
-      <Text
-        text={label}
-        x={14}
-        y={0}
-        width={width - 28}
-        height={height}
-        verticalAlign="middle"
-        fontSize={14}
-        fontStyle="600"
-        fill={color}
-        wrap="word"
-        ellipsis
-      />
+      {!editing && (
+        <Text
+          text={label}
+          x={14}
+          y={0}
+          width={width - 28}
+          height={height}
+          verticalAlign="middle"
+          fontSize={14}
+          fontStyle="600"
+          fill={color}
+          wrap="word"
+          ellipsis
+        />
+      )}
       {linked && (
         <Circle x={width - 14} y={14} radius={4} fill="#16A34A" stroke="#FFFFFF" strokeWidth={1} />
       )}
