@@ -15,6 +15,7 @@ interface FlowNodeShapeProps {
 }
 
 const { width, height } = FLOW_NODE_SIZE
+const MAX_NODE_NAME_LENGTH = 80
 
 export function FlowNodeShape({ node, selected, linked, onSelect, onDragMove, onDragEnd, onHandleDragStart, registerRef }: FlowNodeShapeProps) {
   const setFlowNodeProperty = useEditorStore((s) => s.setFlowNodeProperty)
@@ -25,7 +26,7 @@ export function FlowNodeShape({ node, selected, linked, onSelect, onDragMove, on
   function editName() {
     const value = window.prompt('Nome da etapa', node.name?.trim() || defaultLabel)
     if (value === null) return
-    setFlowNodeProperty(node.id, 'name', value.trim() || undefined)
+    setFlowNodeProperty(node.id, 'name', value.trim().slice(0, MAX_NODE_NAME_LENGTH) || undefined)
   }
 
   return (
