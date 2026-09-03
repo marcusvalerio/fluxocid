@@ -1,0 +1,26 @@
+name = "fluxocit-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Preenchido após `wrangler d1 create fluxocit-db` (ver docs/DEPLOYMENT.md).
+# database_id é um identificador público (não é secreto), mas só existe depois
+# que o banco é criado numa conta Cloudflare real — por isso o placeholder.
+[[d1_databases]]
+binding = "DB"
+database_name = "fluxocit-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[vars]
+# Origem do frontend liberada para CORS + cookies de sessão em dev local.
+FRONTEND_ORIGIN = "http://localhost:5173"
+# Nome exibido como remetente nos e-mails transacionais.
+EMAIL_FROM_NAME = "FluxoCit"
+EMAIL_FROM_ADDRESS = "no-reply@fluxocit.example"
+
+# Secrets (nunca commitados — configurados via `wrangler secret put <NOME>`):
+#   RESEND_API_KEY   — chave da API de e-mail transacional (ver docs/DEPLOYMENT.md).
+# Em dev local sem esse secret, o envio de e-mail cai automaticamente para um
+# ConsoleEmailSender (loga o conteúdo no terminal do wrangler) — nunca falha
+# silenciosamente, mas também nunca finge ter enviado de verdade.

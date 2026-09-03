@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Cloudflare Worker — local D1/state and secrets, never committed
+.wrangler
+.dev.vars
+.dev.vars.*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
