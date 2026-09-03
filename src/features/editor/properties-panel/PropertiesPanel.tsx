@@ -32,6 +32,10 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
   const boundsWarning = boundsStatus ? BOUNDS_WARNING_TEXT[boundsStatus] : undefined
   const maxZ = objects.length ? Math.max(...objects.map((o) => o.zIndex)) : object.zIndex
   const minZ = objects.length ? Math.min(...objects.map((o) => o.zIndex)) : object.zIndex
+  const textDraftSource = def.propertyFields
+    .filter((field) => field.kind === 'text')
+    .map((field) => field.key === 'name' ? object.name ?? '' : String(object.properties[field.key] ?? ''))
+    .join('\u001f')
 
   useEffect(() => {
     const next: Record<string, string> = {}
@@ -40,7 +44,7 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
       next[field.key] = field.key === 'name' ? (object.name ?? '') : String(object.properties[field.key] ?? '')
     }
     setTextDrafts(next)
-  }, [object.id, object.objectType])
+  }, [object.id, object.objectType, textDraftSource])
 
   function commitTextField(key: string) {
     const value = textDrafts[key] ?? ''
@@ -76,10 +80,10 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
       <div className="flex items-center justify-between">
         <h2 className="font-heading text-base font-semibold text-text-primary">{def.label}</h2>
         <div className="flex gap-1">
-          <IconButton label="Trazer para frente" disabled={objects.length < 2 || object.zIndex === maxZ} onClick={bringToFront}>
+          <IconButton label="Trazer para frente" onClick={bringToFront}>
             <BringToFront size={18} />
           </IconButton>
-          <IconButton label="Enviar para trás" disabled={objects.length < 2 || object.zIndex === minZ} onClick={sendToBack}>
+          <IconButton label="Enviar para trás" onClick={sendToBack}>
             <SendToBack size={18} />
           </IconButton>
           <IconButton label="Girar -90°" onClick={() => rotateObject(object.id, -90)}>
