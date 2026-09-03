@@ -30,6 +30,8 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
 
   const def = OBJECT_CATALOG[object.objectType]
   const boundsWarning = boundsStatus ? BOUNDS_WARNING_TEXT[boundsStatus] : undefined
+  const maxZ = objects.length ? Math.max(...objects.map((o) => o.zIndex)) : object.zIndex
+  const minZ = objects.length ? Math.min(...objects.map((o) => o.zIndex)) : object.zIndex
 
   useEffect(() => {
     const next: Record<string, string> = {}
@@ -48,16 +50,12 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
   }
 
   function bringToFront() {
-    if (objects.length < 2) return
-    const maxZ = Math.max(...objects.map((o) => o.zIndex))
-    if (object.zIndex === maxZ) return
+    if (objects.length < 2 || object.zIndex === maxZ) return
     commitObject(object.id, { zIndex: maxZ + 1 })
   }
 
   function sendToBack() {
-    if (objects.length < 2) return
-    const minZ = Math.min(...objects.map((o) => o.zIndex))
-    if (object.zIndex === minZ) return
+    if (objects.length < 2 || object.zIndex === minZ) return
     commitObject(object.id, { zIndex: minZ - 1 })
   }
 
@@ -78,10 +76,10 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
       <div className="flex items-center justify-between">
         <h2 className="font-heading text-base font-semibold text-text-primary">{def.label}</h2>
         <div className="flex gap-1">
-          <IconButton label="Trazer para frente" onClick={bringToFront}>
+          <IconButton label="Trazer para frente" disabled={objects.length < 2 || object.zIndex === maxZ} onClick={bringToFront}>
             <BringToFront size={18} />
           </IconButton>
-          <IconButton label="Enviar para trás" onClick={sendToBack}>
+          <IconButton label="Enviar para trás" disabled={objects.length < 2 || object.zIndex === minZ} onClick={sendToBack}>
             <SendToBack size={18} />
           </IconButton>
           <IconButton label="Girar -90°" onClick={() => rotateObject(object.id, -90)}>
@@ -113,9 +111,7 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
                   onChange={(e) => setTextDrafts((current) => ({ ...current, [field.key]: e.target.value }))}
                   onBlur={() => commitTextField(field.key)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.currentTarget.blur()
-                    }
+                    if (e.key === 'Enter') e.currentTarget.blur()
                   }}
                   className="w-32 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
