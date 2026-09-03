@@ -320,7 +320,7 @@ export function EditorPage() {
           <LibraryPanel onInsert={handleInsert} />
         </aside>
 
-        <main className="flex-1 relative">
+        <main className="flex-1 relative min-w-0 min-h-0">
           <EditorCanvas registerHandle={registerHandle} onDraggingChange={setCanvasDragging} />
 
           <div className="absolute top-3 left-3 flex flex-col gap-1 bg-surface border border-border rounded-lg shadow-sm p-1">
@@ -428,7 +428,7 @@ export function EditorPage() {
           <FlowLibraryPanel onInsert={handleFlowInsert} />
         </aside>
 
-        <main className="flex-1 relative">
+        <main className="flex-1 relative min-w-0 min-h-0">
           <FlowCanvas registerHandle={registerFlowHandle} />
 
           <div className="absolute top-3 left-3 flex flex-col gap-1 bg-surface border border-border rounded-lg shadow-sm p-1">
