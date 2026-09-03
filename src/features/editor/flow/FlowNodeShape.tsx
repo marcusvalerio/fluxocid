@@ -29,7 +29,17 @@ export function FlowNodeShape({ node, selected, linked, onSelect, onDragMove, on
   }
 
   return (
-    <Group ref={(n) => registerRef(node.id, n)} x={node.x} y={node.y} draggable onDragMove={(e) => onDragMove(node.id, e.target.x(), e.target.y())} onDragEnd={(e) => onDragEnd(node.id, e.target.x(), e.target.y())} onClick={() => onSelect(node.id)} onTap={() => onSelect(node.id)}>
+    <Group
+      name={`flow-node-${node.id}`}
+      ref={(n) => registerRef(node.id, n)}
+      x={node.x}
+      y={node.y}
+      draggable
+      onDragMove={(e) => onDragMove(node.id, e.target.x(), e.target.y())}
+      onDragEnd={(e) => onDragEnd(node.id, e.target.x(), e.target.y())}
+      onClick={() => onSelect(node.id)}
+      onTap={() => onSelect(node.id)}
+    >
       <Rect width={width} height={height} fill={color} opacity={0.14} stroke={color} strokeWidth={selected ? 3 : 1.5} cornerRadius={10} shadowColor="#000000" shadowOpacity={selected ? 0.18 : 0.08} shadowBlur={8} />
       <Rect x={0} y={0} width={6} height={height} fill={color} cornerRadius={[10, 0, 0, 10]} />
       <Text text={label} x={14} y={0} width={width - 28} height={height} verticalAlign="middle" fontSize={14} fontStyle="600" fill={color} wrap="word" ellipsis onDblClick={(e) => { e.cancelBubble = true; editName() }} onDblTap={(e) => { e.cancelBubble = true; editName() }} />
