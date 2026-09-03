@@ -1,5 +1,5 @@
 import { useEditorStore } from '../state/useEditorStore'
-import { layoutRepository } from '../../../shared/data/LocalLayoutRepository'
+import { layoutRepository } from '../../../shared/data/repository'
 import { computeOccupancyPercent } from '../../../shared/lib/spatialRules'
 import { NumberField } from '../../../shared/ui/NumberField'
 

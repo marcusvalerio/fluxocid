@@ -70,6 +70,8 @@ export interface Layout {
   id: string
   organizationId: string
   name: string
+  /** Optional free-text project description (Fase 9 — "Meus Projetos"). */
+  description?: string
   scalePxPerMeter: number
   gridStepM: number
   widthM?: number
@@ -85,11 +87,12 @@ export interface Layout {
 
 export type LayoutSummary = Pick<
   Layout,
-  'id' | 'organizationId' | 'name' | 'createdAt' | 'updatedAt'
+  'id' | 'organizationId' | 'name' | 'description' | 'createdAt' | 'updatedAt'
 >
 
 export interface NewLayoutInput {
   name: string
+  description?: string
   widthM?: number
   heightM?: number
 }

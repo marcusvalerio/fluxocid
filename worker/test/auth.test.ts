@@ -169,7 +169,8 @@ describe('forgot-password / reset-password', () => {
     })
     const logged = logSpy.mock.calls.map((args) => args.join(' ')).join('\n')
     logSpy.mockRestore()
-    const token = logged.match(/token=(\S+)/)?.[1]!
+    const token = logged.match(/token=(\S+)/)?.[1]
+    expect(token).toBeTruthy()
 
     const first = await api('/api/auth/reset-password', {
       method: 'POST',

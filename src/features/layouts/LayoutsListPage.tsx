@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LayoutGrid, Plus, Trash2 } from 'lucide-react'
-import { layoutRepository } from '../../shared/data/LocalLayoutRepository'
+import { layoutRepository } from '../../shared/data/repository'
 import { DEFAULT_ENV_HEIGHT_M, DEFAULT_ENV_WIDTH_M } from '../editor/state/useEditorStore'
 import { Button } from '../../shared/ui/Button'
 import { Panel } from '../../shared/ui/Panel'

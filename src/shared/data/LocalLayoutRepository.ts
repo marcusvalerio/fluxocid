@@ -19,14 +19,17 @@ function writeAll(layouts: Layout[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts))
 }
 
-/** localStorage-backed implementation, used until Supabase credentials are configured (docs/TECH_STACK.md § 2). */
+/** localStorage-backed implementation — active before login, and as the read source for the
+ * Fase 9 local-to-remote migration. See shared/data/repository.ts for the swappable facade that
+ * every feature actually imports. */
 export class LocalLayoutRepository implements LayoutRepository {
   async listLayouts(): Promise<LayoutSummary[]> {
     return readAll()
-      .map(({ id, organizationId, name, createdAt, updatedAt }) => ({
+      .map(({ id, organizationId, name, description, createdAt, updatedAt }) => ({
         id,
         organizationId,
         name,
+        description,
         createdAt,
         updatedAt,
       }))
@@ -43,6 +46,7 @@ export class LocalLayoutRepository implements LayoutRepository {
       id: createId(),
       organizationId: LOCAL_ORG_ID,
       name: input.name,
+      description: input.description,
       scalePxPerMeter: 50,
       gridStepM: 0.1,
       widthM: input.widthM,
@@ -64,6 +68,23 @@ export class LocalLayoutRepository implements LayoutRepository {
     layout.name = name
     layout.updatedAt = new Date().toISOString()
     writeAll(layouts)
+  }
+
+  async duplicateLayout(id: string): Promise<Layout> {
+    const layouts = readAll()
+    const source = layouts.find((l) => l.id === id)
+    if (!source) throw new Error('Layout não encontrado.')
+    const now = new Date().toISOString()
+    const copy: Layout = {
+      ...source,
+      id: createId(),
+      name: `${source.name} (cópia)`,
+      createdAt: now,
+      updatedAt: now,
+    }
+    layouts.push(copy)
+    writeAll(layouts)
+    return copy
   }
 
   async deleteLayout(id: string): Promise<void> {
@@ -98,5 +119,3 @@ export class LocalLayoutRepository implements LayoutRepository {
     writeAll(layouts)
   }
 }
-
-export const layoutRepository: LayoutRepository = new LocalLayoutRepository()

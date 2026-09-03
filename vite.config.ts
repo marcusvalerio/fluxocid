@@ -10,5 +10,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // worker/ is a separate package with its own vitest-pool-workers config/runner (`npm test`
+    // inside worker/) — excluded here so the frontend's jsdom runner never tries to resolve
+    // Workers-only modules like `cloudflare:test`.
+    exclude: ['**/node_modules/**', 'worker/**'],
   },
 })
