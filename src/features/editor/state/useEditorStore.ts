@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { createId } from '../../../shared/lib/id'
 import { normalizeDeg } from '../../../shared/lib/units'
 import { getBoundingBox, snapToGrid } from '../../../shared/lib/geometry'
-import type { Layout, LayoutObject, ObjectTypeKey } from '../../../types/layout'
+import type { Layout, LayoutObject, ObjectCategory, ObjectTypeKey } from '../../../types/layout'
 import type { FlowConnection, FlowConnectionType, FlowNode, FlowNodeType } from '../../../types/flow'
 import { FLOW_NODE_SIZE } from '../../../types/flow'
 import { OBJECT_CATALOG } from '../objects/catalog'
@@ -11,6 +11,15 @@ export type AlignMode = 'left' | 'right' | 'top' | 'bottom' | 'centerX' | 'cente
 export type DistributeAxis = 'x' | 'y'
 
 const MAX_HISTORY = 100
+
+/** Áreas funcionam como camadas de fundo (Fase 9 § Áreas) — em vez de sempre empilhar o novo
+ * objeto no topo, uma área nova/duplicada recebe o zIndex mais baixo do layout, para nunca
+ * cobrir visualmente (nem roubar clique/seleção de) objetos já colocados sobre ela. O usuário
+ * ainda pode trazer uma área para frente deliberadamente via as ações de z-order. */
+function insertZIndex(objects: LayoutObject[], category: ObjectCategory): number {
+  if (category !== 'area') return objects.length
+  return objects.length > 0 ? Math.min(...objects.map((o) => o.zIndex)) - 1 : 0
+}
 
 /** Fallback environment size (m) for layouts created before this feature, or with invalid dims. */
 export const DEFAULT_ENV_WIDTH_M = 20
@@ -171,7 +180,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       width: def.defaultWidth,
       length: def.defaultLength,
       rotationDeg: 0,
-      zIndex: objects.length,
+      zIndex: insertZIndex(objects, def.category),
       properties: { ...(def.defaultProperties ?? {}) },
     }
 
@@ -251,7 +260,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       x: original.x + 20,
       y: original.y + 20,
       properties: { ...original.properties },
-      zIndex: objects.length,
+      zIndex: insertZIndex(objects, original.category),
     }
     set({
       objects: [...objects, copy],
@@ -281,9 +290,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const { objects, history, selectedIds } = get()
     if (selectedIds.length === 0) return
     const ids = new Set(selectedIds)
-    const maxZ = objects.length
+    let nextFrontZ = objects.length
+    let nextBackZ = objects.length > 0 ? Math.min(...objects.map((o) => o.zIndex)) - 1 : -1
     const copies: LayoutObject[] = []
-    objects.forEach((o, i) => {
+    objects.forEach((o) => {
       if (!ids.has(o.id)) return
       copies.push({
         ...o,
@@ -291,7 +301,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         x: o.x + 20,
         y: o.y + 20,
         properties: { ...o.properties },
-        zIndex: maxZ + i,
+        zIndex: o.category === 'area' ? nextBackZ-- : nextFrontZ++,
       })
     })
     set({

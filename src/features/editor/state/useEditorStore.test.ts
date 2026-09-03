@@ -236,6 +236,61 @@ describe('useEditorStore', () => {
     })
   })
 
+  describe('áreas como camada de fundo (Fase 9)', () => {
+    function orderedIds() {
+      return [...useEditorStore.getState().objects].sort((x, y) => x.zIndex - y.zIndex).map((o) => o.id)
+    }
+
+    it('uma área inserida depois de outros objetos ainda fica atrás deles', () => {
+      useEditorStore.getState().addObject('rack', 100, 100)
+      const rack = useEditorStore.getState().objects[0]
+      useEditorStore.getState().addObject('area', 500, 500)
+      const area = useEditorStore.getState().objects[1]
+
+      expect(area.zIndex).toBeLessThan(rack.zIndex)
+      expect(orderedIds()).toEqual([area.id, rack.id])
+    })
+
+    it('um objeto comum inserido depois de uma área continua na frente dela', () => {
+      useEditorStore.getState().addObject('area', 500, 500)
+      const area = useEditorStore.getState().objects[0]
+      useEditorStore.getState().addObject('rack', 100, 100)
+      const rack = useEditorStore.getState().objects[1]
+
+      expect(rack.zIndex).toBeGreaterThan(area.zIndex)
+      expect(orderedIds()).toEqual([area.id, rack.id])
+    })
+
+    it('duplicar uma área mantém a cópia atrás dos objetos comuns', () => {
+      useEditorStore.getState().addObject('rack', 100, 100)
+      const rack = useEditorStore.getState().objects[0]
+      useEditorStore.getState().addObject('area', 500, 500)
+      const area = useEditorStore.getState().objects[1]
+
+      useEditorStore.getState().duplicateObject(area.id)
+      const copy = useEditorStore.getState().objects.find((o) => o.id !== area.id && o.id !== rack.id)!
+
+      expect(copy.zIndex).toBeLessThan(rack.zIndex)
+      expect(orderedIds()[orderedIds().length - 1]).toBe(rack.id)
+    })
+
+    it('duplicateSelected também mantém áreas atrás ao duplicar objetos mistos', () => {
+      useEditorStore.getState().addObject('rack', 100, 100)
+      const rack = useEditorStore.getState().objects[0]
+      useEditorStore.getState().addObject('area', 500, 500)
+      const area = useEditorStore.getState().objects[1]
+
+      useEditorStore.getState().selectMany([rack.id, area.id], false)
+      useEditorStore.getState().duplicateSelected()
+
+      const all = useEditorStore.getState().objects
+      const areaCopy = all.find((o) => o.category === 'area' && o.id !== area.id)!
+      const rackCopy = all.find((o) => o.category !== 'area' && o.id !== rack.id)!
+      expect(areaCopy.zIndex).toBeLessThan(rack.zIndex)
+      expect(areaCopy.zIndex).toBeLessThan(rackCopy.zIndex)
+    })
+  })
+
   describe('align and distribute', () => {
     it('aligns selected objects to the left edge of the group bounding box', () => {
       useEditorStore.getState().addObject('pallet', 100, 100) // -> x=40
