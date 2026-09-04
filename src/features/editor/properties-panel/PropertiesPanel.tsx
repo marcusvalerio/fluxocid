@@ -64,22 +64,22 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4 overflow-hidden">
       {hasOverlap && (
         <div className="flex items-start gap-2 rounded-md bg-danger/10 text-danger text-sm p-2.5">
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-          <span>Sobreposto com outro porta-paletes ou corredor — ajuste a posição.</span>
+          <span className="min-w-0 break-words">Sobreposto com outro porta-paletes ou corredor — ajuste a posição.</span>
         </div>
       )}
       {boundsWarning && (
         <div className="flex items-start gap-2 rounded-md bg-warning/10 text-warning text-sm p-2.5">
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-          <span>{boundsWarning}</span>
+          <span className="min-w-0 break-words">{boundsWarning}</span>
         </div>
       )}
-      <div className="flex items-center justify-between">
-        <h2 className="font-heading text-base font-semibold text-text-primary">{def.label}</h2>
-        <div className="flex gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+        <h2 className="font-heading text-base font-semibold text-text-primary truncate min-w-0">{def.label}</h2>
+        <div className="flex flex-wrap justify-end gap-1 shrink-0 max-w-full">
           <IconButton label="Trazer para frente" onClick={bringToFront}>
             <BringToFront size={18} />
           </IconButton>
@@ -101,13 +101,13 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         {def.propertyFields.map((field) => {
           if (field.kind === 'text') {
             const value = textDrafts[field.key] ?? ''
             return (
-              <label key={field.key} className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-text-secondary">{field.label}</span>
+              <label key={field.key} className="grid grid-cols-[minmax(0,1fr)_minmax(0,8rem)] items-center gap-2 text-sm min-w-0">
+                <span className="min-w-0 break-words text-text-secondary">{field.label}</span>
                 <input
                   type="text"
                   value={value}
@@ -117,7 +117,7 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') e.currentTarget.blur()
                   }}
-                  className="w-32 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full min-w-0 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>
             )
@@ -136,16 +136,16 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
           if (field.kind === 'select') {
             const value = String(object.properties[field.key] ?? field.options?.[0]?.value ?? '')
             return (
-              <label key={field.key} className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-text-secondary">{field.label}</span>
-                <select value={value} onChange={(e) => setProperty(object.id, field.key, e.target.value)} className="w-32 rounded border border-border bg-white px-2 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-primary/40">
+              <label key={field.key} className="grid grid-cols-[minmax(0,1fr)_minmax(0,8rem)] items-center gap-2 text-sm min-w-0">
+                <span className="min-w-0 break-words text-text-secondary">{field.label}</span>
+                <select value={value} onChange={(e) => setProperty(object.id, field.key, e.target.value)} className="w-full min-w-0 rounded border border-border bg-white px-2 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-primary/40">
                   {field.options?.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </label>
             )
           }
           if (field.kind === 'info') {
-            return <div key={field.key} className="flex items-center justify-between gap-2 text-sm"><span className="text-text-secondary">{field.label}</span><span className="text-text-primary font-medium">{field.compute?.(object)}</span></div>
+            return <div key={field.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 text-sm min-w-0"><span className="min-w-0 break-words text-text-secondary">{field.label}</span><span className="min-w-0 text-right text-text-primary font-medium break-words">{field.compute?.(object)}</span></div>
           }
           return null
         })}
