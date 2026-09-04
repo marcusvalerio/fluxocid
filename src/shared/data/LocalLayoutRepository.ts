@@ -27,6 +27,29 @@ function writeAll(layouts: Layout[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts))
 }
 
+export function flushLocalLayoutSnapshot(
+  id: string,
+  objects: LayoutObject[],
+  flowNodes: FlowNode[],
+  flowConnections: FlowConnection[],
+): void {
+  try {
+    const layouts = readAll()
+    const layout = layouts.find((item) => item.id === id)
+    if (!layout) return
+
+    layout.objects = objects
+    layout.flowNodes = flowNodes
+    layout.flowConnections = flowConnections
+    layout.updatedAt = new Date().toISOString()
+    writeAll(layouts)
+
+    pendingSnapshots.delete(id)
+  } catch {
+    // Never block page close because local persistence failed.
+  }
+}
+
 function flushPendingSnapshots(): void {
   if (pendingSnapshots.size === 0) return
 
@@ -37,20 +60,24 @@ function flushPendingSnapshots(): void {
     for (const [id, pending] of pendingSnapshots) {
       const layout = layouts.find((item) => item.id === id)
       if (!layout) continue
+      let layoutChanged = false
 
       if (pending.objects) {
         layout.objects = pending.objects
-        changed = true
+        layoutChanged = true
       }
       if (pending.flowNodes) {
         layout.flowNodes = pending.flowNodes
-        changed = true
+        layoutChanged = true
       }
       if (pending.flowConnections) {
         layout.flowConnections = pending.flowConnections
+        layoutChanged = true
+      }
+      if (layoutChanged) {
+        layout.updatedAt = new Date().toISOString()
         changed = true
       }
-      if (changed) layout.updatedAt = new Date().toISOString()
     }
 
     if (changed) writeAll(layouts)
