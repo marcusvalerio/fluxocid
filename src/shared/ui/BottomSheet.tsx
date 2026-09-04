@@ -1,4 +1,4 @@
-import { useEffect, useState, type PropsWithChildren } from 'react'
+import type { PropsWithChildren } from 'react'
 import { X } from 'lucide-react'
 
 interface BottomSheetProps {
@@ -33,22 +33,6 @@ export function BottomSheet({
   onToggleCollapsed,
   children,
 }: PropsWithChildren<BottomSheetProps>) {
-  const [userCollapsed, setUserCollapsed] = useState(false)
-
-  // A newly selected object/node should expose its properties immediately. The parent can
-  // still request a collapsed state after the user explicitly toggles the sheet or while
-  // a drag is active; changing the title means a new selection, so start expanded again.
-  useEffect(() => {
-    setUserCollapsed(false)
-  }, [title])
-
-  const effectiveCollapsed = Boolean(onToggleCollapsed && collapsed && userCollapsed)
-
-  function toggleCollapsed() {
-    setUserCollapsed((value) => !value)
-    onToggleCollapsed?.()
-  }
-
   return (
     <div
       className={`fixed inset-x-0 top-0 bottom-16 z-30 flex flex-col justify-end md:hidden ${modal ? '' : 'pointer-events-none'}`}
@@ -60,9 +44,9 @@ export function BottomSheet({
         <div
           role={onToggleCollapsed ? 'button' : undefined}
           tabIndex={onToggleCollapsed ? 0 : undefined}
-          onClick={onToggleCollapsed ? toggleCollapsed : undefined}
+          onClick={onToggleCollapsed}
           onKeyDown={(e) => {
-            if (onToggleCollapsed && (e.key === 'Enter' || e.key === ' ')) toggleCollapsed()
+            if (onToggleCollapsed && (e.key === 'Enter' || e.key === ' ')) onToggleCollapsed()
           }}
           className="flex items-center justify-between px-4 py-3 border-b border-border text-left"
         >
@@ -82,7 +66,7 @@ export function BottomSheet({
         </div>
         <div
           className={`overflow-y-auto p-4 transition-[grid-template-rows,opacity] duration-200 ease-out grid ${
-            effectiveCollapsed ? 'grid-rows-[0fr] opacity-0 !p-0' : 'grid-rows-[1fr] opacity-100'
+            collapsed ? 'grid-rows-[0fr] opacity-0 !p-0' : 'grid-rows-[1fr] opacity-100'
           }`}
         >
           <div className="overflow-hidden">{children}</div>
