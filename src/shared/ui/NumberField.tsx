@@ -28,9 +28,9 @@ export function NumberField({ label, value, unit, step = 1, min, onCommit }: Num
   }
 
   return (
-    <label className="flex items-center justify-between gap-2 text-sm">
-      <span className="text-text-secondary">{label}</span>
-      <span className="flex items-center gap-1">
+    <label className="grid grid-cols-[minmax(0,1fr)_minmax(0,8rem)] items-center gap-2 text-sm min-w-0">
+      <span className="min-w-0 break-words text-text-secondary">{label}</span>
+      <span className="flex min-w-0 items-center gap-1">
         <input
           type="text"
           inputMode="decimal"
@@ -41,9 +41,9 @@ export function NumberField({ label, value, unit, step = 1, min, onCommit }: Num
           onKeyDown={(e) => {
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
           }}
-          className="w-20 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="w-full min-w-0 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
-        <span className="text-text-secondary w-5">{unit}</span>
+        {unit && <span className="w-5 shrink-0 text-text-secondary">{unit}</span>}
       </span>
     </label>
   )
