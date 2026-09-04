@@ -6,6 +6,14 @@ import type { LayoutRepository } from './LayoutRepository'
 const STORAGE_KEY = 'fluxocit:layouts'
 const LOCAL_ORG_ID = 'local'
 
+type PendingSnapshot = {
+  objects?: LayoutObject[]
+  flowNodes?: FlowNode[]
+  flowConnections?: FlowConnection[]
+}
+
+const pendingSnapshots = new Map<string, PendingSnapshot>()
+
 function readAll(): Layout[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -19,7 +27,45 @@ function writeAll(layouts: Layout[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts))
 }
 
-/** localStorage-backed implementation, used until Supabase credentials are configured (docs/TECH_STACK.md § 2). */
+function flushPendingSnapshots(): void {
+  if (pendingSnapshots.size === 0) return
+
+  try {
+    const layouts = readAll()
+    let changed = false
+
+    for (const [id, pending] of pendingSnapshots) {
+      const layout = layouts.find((item) => item.id === id)
+      if (!layout) continue
+
+      if (pending.objects) {
+        layout.objects = pending.objects
+        changed = true
+      }
+      if (pending.flowNodes) {
+        layout.flowNodes = pending.flowNodes
+        changed = true
+      }
+      if (pending.flowConnections) {
+        layout.flowConnections = pending.flowConnections
+        changed = true
+      }
+      if (changed) layout.updatedAt = new Date().toISOString()
+    }
+
+    if (changed) writeAll(layouts)
+    pendingSnapshots.clear()
+  } catch {
+    // Never block page close because local persistence failed.
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', flushPendingSnapshots)
+  window.addEventListener('beforeunload', flushPendingSnapshots)
+}
+
+/** localStorage-backed implementation, used until the remote repository is configured. */
 export class LocalLayoutRepository implements LayoutRepository {
   /** Serialize autosave writes so Layout and Fluxo can never overwrite each other concurrently. */
   private writeQueue: Promise<void> = Promise.resolve()
@@ -80,6 +126,10 @@ export class LocalLayoutRepository implements LayoutRepository {
   }
 
   async saveLayoutObjects(id: string, objects: LayoutObject[]): Promise<void> {
+    const pending = pendingSnapshots.get(id) ?? {}
+    pending.objects = objects
+    pendingSnapshots.set(id, pending)
+
     return this.enqueueWrite(() => {
       const layouts = readAll()
       const layout = layouts.find((l) => l.id === id)
@@ -87,6 +137,11 @@ export class LocalLayoutRepository implements LayoutRepository {
       layout.objects = objects
       layout.updatedAt = new Date().toISOString()
       writeAll(layouts)
+      const current = pendingSnapshots.get(id)
+      if (current?.objects === objects) {
+        delete current.objects
+        if (!current.flowNodes && !current.flowConnections) pendingSnapshots.delete(id)
+      }
     })
   }
 
@@ -100,6 +155,11 @@ export class LocalLayoutRepository implements LayoutRepository {
   }
 
   async saveFlowBoard(id: string, flowNodes: FlowNode[], flowConnections: FlowConnection[]): Promise<void> {
+    const pending = pendingSnapshots.get(id) ?? {}
+    pending.flowNodes = flowNodes
+    pending.flowConnections = flowConnections
+    pendingSnapshots.set(id, pending)
+
     return this.enqueueWrite(() => {
       const layouts = readAll()
       const layout = layouts.find((l) => l.id === id)
@@ -108,6 +168,12 @@ export class LocalLayoutRepository implements LayoutRepository {
       layout.flowConnections = flowConnections
       layout.updatedAt = new Date().toISOString()
       writeAll(layouts)
+      const current = pendingSnapshots.get(id)
+      if (current?.flowNodes === flowNodes && current?.flowConnections === flowConnections) {
+        delete current.flowNodes
+        delete current.flowConnections
+        if (!current.objects) pendingSnapshots.delete(id)
+      }
     })
   }
 }
