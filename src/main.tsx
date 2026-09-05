@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { App } from './app/App'
 import './app/index.css'
+import './shared/data/localPersistenceFlush'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

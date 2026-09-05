@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Line } from 'react-konva'
 import type Konva from 'konva'
 import { useEditorStore } from '../state/useEditorStore'
-import { FlowNodeShape } from './FlowNodeShape'
+import { FlowNodeShape, MAX_NODE_NAME_LENGTH } from './FlowNodeShape'
 import { FlowConnectionShape } from './FlowConnectionShape'
 import { FLOW_NODE_SIZE, FLOW_NODE_TYPE_LABELS, type FlowNodeType } from '../../../types/flow'
 
@@ -403,6 +403,7 @@ export function FlowCanvas({ registerHandle }: FlowCanvasProps) {
           autoFocus
           type="text"
           value={editingValue}
+          maxLength={MAX_NODE_NAME_LENGTH}
           placeholder={FLOW_NODE_TYPE_LABELS[editingNode.type]}
           onChange={(e) => setEditingValue(e.target.value)}
           onFocus={(e) => e.target.select()}

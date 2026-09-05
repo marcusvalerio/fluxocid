@@ -23,12 +23,14 @@ export function FlowConnectionShape({ connection, fromNode, toNode, selected, on
       <Arrow
         points={points}
         bezier
+        lineCap="round"
+        lineJoin="round"
         stroke={selected ? '#0796D7' : style.stroke}
         fill={selected ? '#0796D7' : style.stroke}
         strokeWidth={selected ? style.strokeWidth + 1.5 : style.strokeWidth}
         dash={style.dash}
-        pointerLength={12}
-        pointerWidth={10}
+        pointerLength={10}
+        pointerWidth={9}
         hitStrokeWidth={16}
         onClick={() => onSelect(connection.id)}
         onTap={() => onSelect(connection.id)}

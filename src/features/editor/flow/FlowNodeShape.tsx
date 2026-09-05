@@ -16,6 +16,9 @@ interface FlowNodeShapeProps {
 }
 
 const { width, height } = FLOW_NODE_SIZE
+/** Soft cap on a Fluxo node's name — generous for any real process-step label, just a safety net
+ * against pasting something absurdly long into the inline editor (see FlowCanvas's overlay input). */
+export const MAX_NODE_NAME_LENGTH = 80
 
 /** A process-step box: rounded rect tinted by type, name/type label, and a small connect handle
  * on the right edge the user drags to another node to create a directional connection. */
@@ -32,10 +35,12 @@ export function FlowNodeShape({
   registerRef,
 }: FlowNodeShapeProps) {
   const color = FLOW_NODE_TYPE_COLORS[node.type]
-  const label = node.name?.trim() || FLOW_NODE_TYPE_LABELS[node.type]
+  const defaultLabel = FLOW_NODE_TYPE_LABELS[node.type]
+  const label = node.name?.trim() || defaultLabel
 
   return (
     <Group
+      name={`flow-node-${node.id}`}
       ref={(n) => registerRef(node.id, n)}
       x={node.x}
       y={node.y}
@@ -47,18 +52,7 @@ export function FlowNodeShape({
       onDblClick={() => onStartEdit(node.id)}
       onDblTap={() => onStartEdit(node.id)}
     >
-      <Rect
-        width={width}
-        height={height}
-        fill={color}
-        opacity={0.14}
-        stroke={color}
-        strokeWidth={selected ? 3 : 1.5}
-        cornerRadius={10}
-        shadowColor="#000000"
-        shadowOpacity={selected ? 0.18 : 0.08}
-        shadowBlur={8}
-      />
+      <Rect width={width} height={height} fill={color} opacity={0.14} stroke={color} strokeWidth={selected ? 3 : 1.5} cornerRadius={10} shadowColor="#000000" shadowOpacity={selected ? 0.18 : 0.08} shadowBlur={8} />
       <Rect x={0} y={0} width={6} height={height} fill={color} cornerRadius={[10, 0, 0, 10]} />
       {!editing && (
         <Text

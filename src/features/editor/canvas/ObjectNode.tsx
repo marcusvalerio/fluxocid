@@ -227,6 +227,16 @@ export function ObjectNode({
       onTap={handleSelect}
     >
       <Render obj={obj} widthPx={widthPx} lengthPx={lengthPx} />
+      {/* Universal hit area: every logistics object remains selectable even when its technical
+          renderer uses small/decorative shapes or non-listening children. It follows the exact
+          footprint, stays visually transparent, and lets the Group keep the same drag/select flow
+          on desktop and touch devices. */}
+      <Rect
+        width={widthPx}
+        height={lengthPx}
+        fill="rgba(0,0,0,0.001)"
+        listening
+      />
       {(hasOverlap || hasCriticalViolation) && (
         <Rect
           width={widthPx}

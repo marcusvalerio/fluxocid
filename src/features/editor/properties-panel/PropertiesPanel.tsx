@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   AlertTriangle,
   ChevronDown,
@@ -19,9 +20,7 @@ import type { LayoutObject } from '../../../types/layout'
 
 interface PropertiesPanelProps {
   object: LayoutObject
-  /** True when this object's footprint overlaps another storage object (rack/corridor). */
   hasOverlap?: boolean
-  /** Whether the object sits inside, straddles, or is entirely off the environment. */
   boundsStatus?: BoundsStatus
 }
 
@@ -39,27 +38,48 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
   const sendSelectedToBack = useEditorStore((s) => s.sendSelectedToBack)
   const bringSelectedForward = useEditorStore((s) => s.bringSelectedForward)
   const sendSelectedBackward = useEditorStore((s) => s.sendSelectedBackward)
+  const [textDrafts, setTextDrafts] = useState<Record<string, string>>({})
 
   const def = OBJECT_CATALOG[object.objectType]
   const boundsWarning = boundsStatus ? BOUNDS_WARNING_TEXT[boundsStatus] : undefined
+  const textDraftSource = def.propertyFields
+    .filter((field) => field.kind === 'text')
+    .map((field) => field.key === 'name' ? object.name ?? '' : String(object.properties[field.key] ?? ''))
+    .join('\u001f')
+
+  useEffect(() => {
+    const next: Record<string, string> = {}
+    for (const field of def.propertyFields) {
+      if (field.kind !== 'text') continue
+      next[field.key] = field.key === 'name' ? (object.name ?? '') : String(object.properties[field.key] ?? '')
+    }
+    setTextDrafts(next)
+  }, [object.id, object.objectType, textDraftSource])
+
+  function commitTextField(key: string) {
+    const value = textDrafts[key] ?? ''
+    const current = key === 'name' ? (object.name ?? '') : String(object.properties[key] ?? '')
+    if (value === current) return
+    setProperty(object.id, key, value)
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4 overflow-hidden">
       {hasOverlap && (
         <div className="flex items-start gap-2 rounded-md bg-danger/10 text-danger text-sm p-2.5">
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-          <span>Sobreposto com outro porta-paletes ou corredor — ajuste a posição.</span>
+          <span className="min-w-0 break-words">Sobreposto com outro porta-paletes ou corredor — ajuste a posição.</span>
         </div>
       )}
       {boundsWarning && (
         <div className="flex items-start gap-2 rounded-md bg-warning/10 text-warning text-sm p-2.5">
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-          <span>{boundsWarning}</span>
+          <span className="min-w-0 break-words">{boundsWarning}</span>
         </div>
       )}
-      <div className="flex items-center justify-between">
-        <h2 className="font-heading text-base font-semibold text-text-primary">{def.label}</h2>
-        <div className="flex gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+        <h2 className="font-heading text-base font-semibold text-text-primary truncate min-w-0">{def.label}</h2>
+        <div className="flex flex-wrap justify-end gap-1 shrink-0 max-w-full">
           <IconButton label="Girar -90°" onClick={() => rotateObject(object.id, -90)}>
             <RotateCcw size={18} />
           </IconButton>
@@ -75,7 +95,7 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
         </div>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <p className="text-xs font-medium text-text-secondary mb-2">Camadas</p>
         <div className="grid grid-cols-4 gap-1">
           <IconButton label="Trazer para frente" onClick={bringSelectedToFront}>
@@ -93,96 +113,52 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         {def.propertyFields.map((field) => {
           if (field.kind === 'text') {
-            const value = field.key === 'name' ? (object.name ?? '') : String(object.properties[field.key] ?? '')
+            const value = textDrafts[field.key] ?? ''
             return (
-              <label key={field.key} className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-text-secondary">{field.label}</span>
+              <label key={field.key} className="grid grid-cols-[minmax(0,1fr)_minmax(0,8rem)] items-center gap-2 text-sm min-w-0">
+                <span className="min-w-0 break-words text-text-secondary">{field.label}</span>
                 <input
                   type="text"
                   value={value}
                   placeholder={def.label}
-                  onChange={(e) => setProperty(object.id, field.key, e.target.value)}
-                  className="w-32 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  onChange={(e) => setTextDrafts((current) => ({ ...current, [field.key]: e.target.value }))}
+                  onBlur={() => commitTextField(field.key)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur()
+                  }}
+                  className="w-full min-w-0 rounded border border-border bg-white px-2 py-1.5 text-right text-base md:text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>
             )
           }
-
           if (field.kind === 'number-m') {
             const raw = (object as unknown as Record<string, number>)[field.key]
-            return (
-              <NumberField
-                key={field.key}
-                label={field.label}
-                unit="m"
-                step={field.step ?? 0.1}
-                min={field.min}
-                value={cmToM(raw)}
-                onCommit={(v) => setProperty(object.id, field.key, mToCm(v))}
-              />
-            )
+            return <NumberField key={field.key} label={field.label} unit="m" step={field.step ?? 0.1} min={field.min} value={cmToM(raw)} onCommit={(v) => setProperty(object.id, field.key, mToCm(v))} />
           }
-
           if (field.kind === 'number-deg') {
-            return (
-              <NumberField
-                key={field.key}
-                label={field.label}
-                unit="°"
-                step={field.step ?? 15}
-                value={object.rotationDeg}
-                onCommit={(v) => setProperty(object.id, field.key, ((v % 360) + 360) % 360)}
-              />
-            )
+            return <NumberField key={field.key} label={field.label} unit="°" step={field.step ?? 15} value={object.rotationDeg} onCommit={(v) => setProperty(object.id, field.key, ((v % 360) + 360) % 360)} />
           }
-
           if (field.kind === 'number-plain') {
             const raw = Number(object.properties[field.key] ?? 0)
-            return (
-              <NumberField
-                key={field.key}
-                label={field.label}
-                unit={field.unit ?? ''}
-                step={field.step ?? 1}
-                min={field.min}
-                value={raw}
-                onCommit={(v) => setProperty(object.id, field.key, v)}
-              />
-            )
+            return <NumberField key={field.key} label={field.label} unit={field.unit ?? ''} step={field.step ?? 1} min={field.min} value={raw} onCommit={(v) => setProperty(object.id, field.key, v)} />
           }
-
           if (field.kind === 'select') {
             const value = String(object.properties[field.key] ?? field.options?.[0]?.value ?? '')
             return (
-              <label key={field.key} className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-text-secondary">{field.label}</span>
-                <select
-                  value={value}
-                  onChange={(e) => setProperty(object.id, field.key, e.target.value)}
-                  className="w-32 rounded border border-border bg-white px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                >
-                  {field.options?.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
+              <label key={field.key} className="grid grid-cols-[minmax(0,1fr)_minmax(0,8rem)] items-center gap-2 text-sm min-w-0">
+                <span className="min-w-0 break-words text-text-secondary">{field.label}</span>
+                <select value={value} onChange={(e) => setProperty(object.id, field.key, e.target.value)} className="w-full min-w-0 rounded border border-border bg-white px-2 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-primary/40">
+                  {field.options?.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </label>
             )
           }
-
           if (field.kind === 'info') {
-            return (
-              <div key={field.key} className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-text-secondary">{field.label}</span>
-                <span className="text-text-primary font-medium">{field.compute?.(object)}</span>
-              </div>
-            )
+            return <div key={field.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 text-sm min-w-0"><span className="min-w-0 break-words text-text-secondary">{field.label}</span><span className="min-w-0 text-right text-text-primary font-medium break-words">{field.compute?.(object)}</span></div>
           }
-
           return null
         })}
       </div>
