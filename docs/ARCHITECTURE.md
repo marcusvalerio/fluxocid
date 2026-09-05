@@ -7,38 +7,53 @@ e `docs/DATABASE.md` (modelo de dados).
 
 FluxoCit é uma aplicação **web SPA** (Single Page Application) escrita em
 React + TypeScript, com o **editor 2D como núcleo do produto**. O
-backend é um serviço gerenciado (Supabase: Postgres + Auth), acessado
-diretamente pelo frontend através de uma camada de repositório — não há
-servidor de aplicação próprio no MVP.
+backend (Fase 9) é um Worker próprio na Cloudflare — **Cloudflare
+Workers + D1 + Hono**, sem Supabase — acessado pelo frontend via HTTP
+através de uma camada de repositório. Um usuário não autenticado (ou o
+app antes da Fase 9) continua funcionando inteiramente no navegador,
+sem servidor: o editor nunca depende diretamente de rede para renderizar
+ou editar um layout.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                        Navegador                          │
-│  ┌───────────────────────────────────────────────────┐   │
-│  │  React App (Vite)                                   │   │
-│  │  ┌───────────┐  ┌───────────────────────────────┐  │   │
-│  │  │  Rotas /   │  │  Feature: editor                │  │   │
-│  │  │  Auth      │  │  ┌─────────┐ ┌───────────────┐ │  │   │
-│  │  │  Layouts   │  │  │ Canvas   │ │ Object catalog │ │  │   │
-│  │  │  list      │  │  │ (Konva)  │ │ (extensível)   │ │  │   │
-│  │  └───────────┘  │  └─────────┘ └───────────────┘ │  │   │
-│  │                  │  ┌─────────┐ ┌───────────────┐ │  │   │
-│  │                  │  │ Editor   │ │ Properties     │ │  │   │
-│  │                  │  │ store    │ │ panel          │ │  │   │
-│  │                  │  │ (Zustand)│ └───────────────┘ │  │   │
-│  │                  │  └─────────┘                     │  │   │
-│  │                  └───────────────────────────────────┘  │   │
-│  │                     ▲                                    │   │
-│  │                     │ LayoutRepository (interface)       │   │
-│  └─────────────────────┼────────────────────────────────────┘   │
-└────────────────────────┼────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                        Navegador                           │
+│  ┌────────────────────────────────────────────────────┐   │
+│  │  React App (Vite)                                    │   │
+│  │  ┌───────────┐  ┌───────────────────────────────┐   │   │
+│  │  │  Rotas /   │  │  Feature: editor                │   │   │
+│  │  │  Auth      │  │  ┌─────────┐ ┌───────────────┐  │   │   │
+│  │  │  Layouts   │  │  │ Canvas   │ │ Object catalog │  │   │   │
+│  │  │  list      │  │  │ (Konva)  │ │ (extensível)   │  │   │   │
+│  │  └───────────┘  │  └─────────┘ └───────────────┘  │   │   │
+│  │                  │  ┌─────────┐ ┌───────────────┐  │   │   │
+│  │                  │  │ Editor   │ │ Properties     │  │   │   │
+│  │                  │  │ store    │ │ panel          │  │   │   │
+│  │                  │  │ (Zustand)│ └───────────────┘  │   │   │
+│  │                  │  └─────────┘                     │   │   │
+│  │                  └────────────────────────────────────┘   │   │
+│  │                     ▲                                     │   │
+│  │                     │ LayoutRepository (interface)        │   │
+│  └─────────────────────┼─────────────────────────────────────┘   │
+└────────────────────────┼─────────────────────────────────────────┘
                           │
              ┌────────────┴────────────┐
              ▼                         ▼
-   Implementação local          Implementação Supabase
-   (IndexedDB — usada até        (Postgres + Auth —
-   credenciais serem             ativada quando o usuário
-   fornecidas)                   fornecer credenciais)
+   LocalLayoutRepository       RemoteLayoutRepository
+   (IndexedDB/localStorage —   (HTTP — ativa quando há
+   usuário sem sessão, e        sessão autenticada)
+   origem da migração)                │
+                                       ▼
+                          ┌─────────────────────────────┐
+                          │  Cloudflare Worker (Hono)    │
+                          │  cookie de sessão HttpOnly    │
+                          │  ┌─────────┐  ┌────────────┐ │
+                          │  │  /api/  │  │  /api/     │ │
+                          │  │  auth/* │  │  projects/*│ │
+                          │  └─────────┘  └────────────┘ │
+                          └───────────────┬───────────────┘
+                                          │
+                                          ▼
+                                 Cloudflare D1 (SQLite)
 ```
 
 ## 2. Frontend
@@ -58,7 +73,7 @@ servidor de aplicação próprio no MVP.
   (cm↔m↔px), geometria (bounding box, rotação, distância), helpers de
   snapping.
 - **`shared/data/`** — camada de repositório (`LayoutRepository` e suas
-  implementações local/Supabase).
+  implementações local/remota, ver § 2.3) e o cliente HTTP do Worker.
 - **`types/`** — tipos compartilhados do modelo de objetos do editor.
 
 ### 2.2 Gerenciamento de estado
@@ -78,7 +93,7 @@ estado (renderização controlada, não "canvas como dono do dado").
 
 ### 2.3 Camada de persistência (`LayoutRepository`)
 
-Interface única consumida pelas features:
+Interface única consumida pelas features (`shared/data/LayoutRepository.ts`):
 
 ```ts
 interface LayoutRepository {
@@ -86,33 +101,73 @@ interface LayoutRepository {
   getLayout(id: string): Promise<Layout>;
   createLayout(input: NewLayoutInput): Promise<Layout>;
   renameLayout(id: string, name: string): Promise<void>;
+  duplicateLayout(id: string): Promise<Layout>;
   deleteLayout(id: string): Promise<void>;
   saveLayoutObjects(id: string, objects: LayoutObject[]): Promise<void>;
+  // + salvar o board de Fluxo (nós/conexões), ver types/flow.ts
 }
 ```
 
-- **Implementação local (`LocalLayoutRepository`)** — usa IndexedDB,
-  ativa desde a Fase 4, sem dependências externas nem credenciais.
-- **Implementação Supabase (`SupabaseLayoutRepository`)** — implementada
-  quando o usuário fornecer as credenciais do projeto Supabase (ver
-  `TECH_STACK.md` § Backend); mesma interface, troca por configuração,
-  sem alterar `features/editor` ou `features/layouts`.
+- **`LocalLayoutRepository`** — IndexedDB/localStorage, ativa desde a
+  Fase 4, sem dependências externas nem credenciais. Usada por qualquer
+  visitante sem sessão, e é a origem dos dados na migração local→D1.
+- **`RemoteLayoutRepository`** — HTTP contra o Worker Cloudflare
+  (`shared/data/apiClient.ts` + `RemoteLayoutRepository.ts`), autenticado
+  via cookie de sessão (`credentials: 'include'`, sem token manual).
 
-Isso garante que o núcleo do editor nunca dependa diretamente de
-Supabase, IndexedDB ou qualquer detalhe de infraestrutura.
+Um **facade estável** (`shared/data/repository.ts`) expõe um único
+objeto `layoutRepository` cujos métodos sempre delegam para a
+implementação atualmente ativa; `activateRemoteRepository(userId)` e
+`activateLocalRepository()` trocam o backend por baixo. Quem chama
+(`activateRemoteRepository`/`activateLocalRepository`) é exclusivamente
+o `useAuthStore` (Fase 9), reagindo a login/logout — o restante do app
+sempre importa o mesmo `layoutRepository` e nunca sabe qual
+implementação está ativa. Isso garante que o núcleo do editor nunca
+dependa diretamente do Worker, do D1, do IndexedDB ou de qualquer outro
+detalhe de infraestrutura.
 
-## 3. Autenticação e autorização
+### 2.4 Migração localStorage → D1 (Fase 9)
 
-- Autenticação delegada ao Supabase Auth (e-mail/senha no MVP) quando
-  ativada; até lá, a aplicação roda em **modo local/single-user**
-  (sem tela de login obrigatória), para não bloquear o desenvolvimento
-  e o uso do editor antes da credencial existir. Essa transição é uma
-  decisão de baixo risco reversível — a UI de login já é construída na
-  Fase 4 estrutural, apenas "desligada" até a credencial existir.
-- Autorização (RF-05, BR-40) é aplicada em duas camadas quando Supabase
-  estiver ativo: Row Level Security no Postgres (linha de defesa
-  principal) e checagem de posse de `organization_id` no frontend
-  (defesa em profundidade / UX, nunca a única barreira).
+Ao autenticar, `shared/data/migration.ts` verifica se há layouts locais
+ainda não importados (`getPendingLocalLayouts`, cruzando com uma lista
+de IDs já migrados guardada em `localStorage` sob a chave
+`fluxocit:migration-state`) e oferece importá-los como **novos**
+projetos remotos (`importAllPendingLocalLayouts`) — a migração é
+estritamente aditiva: nunca sobrescreve um projeto remoto existente, e
+revisitar a tela não duplica um layout já importado. Os dados locais
+permanecem intactos no navegador após a migração (não são apagados).
+
+## 3. Autenticação e autorização (Fase 9)
+
+- **Cadastro:** o usuário informa e-mail; o Worker gera uma senha
+  temporária aleatória, cria a conta com `must_change_password = true`
+  e envia a senha por e-mail (`EmailSender`, ver `TECH_STACK.md`) — não
+  existe cadastro com senha escolhida pelo próprio usuário no primeiro
+  acesso.
+- **Login:** e-mail + senha; a senha é verificada contra o hash PBKDF2
+  guardado em `users.password_hash` (nunca texto puro). Se
+  `must_change_password` estiver ligado, toda rota autenticada redireciona
+  para a troca de senha antes de liberar o resto do app (`RequireAuth`,
+  ver `app/App.tsx`) — mesmo que o usuário navegue direto para uma URL do
+  editor.
+- **Sessão:** um token aleatório de 32 bytes é gerado no login/troca de
+  senha; só o hash SHA-256 desse token vai para `sessions.id` no D1. O
+  token bruto vive exclusivamente num cookie `HttpOnly` + `Secure`
+  (quando HTTPS) + `SameSite=Lax` — nunca em `localStorage`/`sessionStorage`,
+  reduzindo a superfície de um roubo de sessão via XSS.
+- **Recuperação de senha:** fluxo por token de uso único
+  (`password_reset_tokens`, expira e é marcado `used_at` após o uso),
+  também entregue por e-mail — nunca exibido na tela.
+- **Isolamento de dados (RF-05, BR-40):** toda query de `projects` no
+  Worker é filtrada por `user_id` na própria query SQL (`worker/src/db.ts`),
+  nunca só no frontend — um usuário que tente ler/renomear/excluir o
+  projeto de outro usuário recebe 404 (não 403, para não confirmar que o
+  ID existe). Validado por teste automatizado (`worker/test/projects.test.ts`)
+  simulando dois usuários e todas as operações cruzadas.
+- **Guarda de rotas no frontend** (`features/auth/AuthGate.tsx`) é
+  defesa em profundidade para UX (evita renderizar telas que vão falhar
+  por 401), nunca a única barreira — a barreira real é o filtro por
+  `user_id` no Worker.
 
 ## 4. Arquitetura do editor 2D
 
@@ -205,13 +260,19 @@ seleção, drag, undo/redo ou persistência. Isso cumpre RF-44/RNF-06.
 
 ## 6. Segurança
 
-- Nenhum segredo no código-fonte; variáveis de ambiente (`SUPABASE_URL`,
-  `SUPABASE_ANON_KEY`) via `.env` não versionado (`.env.example`
-  versionado como referência).
-- Validação de entrada no frontend (formulários) **e** políticas RLS no
-  banco como barreira real (o frontend nunca é a única defesa).
-- Chave usada no frontend é sempre a `anon key` pública do Supabase,
-  nunca a `service_role key`.
+- Nenhum segredo no código-fonte. O frontend só conhece
+  `VITE_API_BASE_URL` (a URL pública do Worker, não é um segredo) via
+  `.env` não versionado (`.env.example` versionado como referência). O
+  único segredo real do sistema — `RESEND_API_KEY` — vive exclusivamente
+  como secret do Worker (`wrangler secret put`), nunca em variável de
+  ambiente do frontend, nunca em código, nunca em resposta de API.
+- Senha de usuário: nunca texto puro, nunca SHA-256 puro — PBKDF2-HMAC-SHA256
+  com salt aleatório por usuário (ver `TECH_STACK.md` § Backend).
+- Token de sessão: só o hash SHA-256 é persistido; o token bruto só
+  existe no cookie `HttpOnly`/`Secure`/`SameSite=Lax` do navegador.
+- Validação de entrada no frontend (formulários) **e** filtro por
+  `user_id` em toda query do Worker como barreira real — o frontend
+  nunca é a única defesa de isolamento de dados.
 
 ## 7. Preparação para regras espaciais e fluxos (futuro)
 

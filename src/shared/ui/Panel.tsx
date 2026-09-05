@@ -1,7 +1,9 @@
-import type { PropsWithChildren } from 'react'
+import type { HTMLAttributes } from 'react'
 
-export function Panel({ children, className = '' }: PropsWithChildren<{ className?: string }>) {
+export function Panel({ children, className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`bg-surface border border-border rounded-lg shadow-sm ${className}`}>{children}</div>
+    <div className={`bg-surface border border-border rounded-lg shadow-sm ${className}`} {...props}>
+      {children}
+    </div>
   )
 }

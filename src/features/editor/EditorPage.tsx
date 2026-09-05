@@ -30,7 +30,7 @@ import { FlowCanvas, type FlowCanvasHandle } from './flow/FlowCanvas'
 import { FlowLibraryPanel } from './flow/FlowLibraryPanel'
 import { FlowPropertiesPanel } from './flow/FlowPropertiesPanel'
 import { useEditorStore } from './state/useEditorStore'
-import { layoutRepository } from '../../shared/data/LocalLayoutRepository'
+import { layoutRepository } from '../../shared/data/repository'
 import { findStorageOverlaps, getBoundsStatus } from '../../shared/lib/spatialRules'
 import { IconButton } from '../../shared/ui/IconButton'
 import { ThemeToggle } from '../../shared/ui/ThemeToggle'
@@ -154,6 +154,26 @@ export function EditorPage() {
     }
   }, [layoutId, loadLayout])
 
+  // Retry hook for both autosave effects below (Fase 9 § Estados de rede: "nunca apagar
+  // silenciosamente trabalho não sincronizado... tentar sincronizar novamente quando apropriado").
+  // A failed save never touches editor state — `objects`/`flowNodes` stay exactly as the user left
+  // them in memory — so a retry only needs to re-run the same save, not recover any data.
+  const [saveRetryTick, setSaveRetryTick] = useState(0)
+
+  useEffect(() => {
+    function handleOnline() {
+      setSaveRetryTick((t) => t + 1)
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [])
+
+  useEffect(() => {
+    if (saveStatus !== 'error') return
+    const timer = setTimeout(() => setSaveRetryTick((t) => t + 1), 5000)
+    return () => clearTimeout(timer)
+  }, [saveStatus])
+
   // Autosave (debounced) on every committed change (undo history entry) after the initial load —
   // not on every live-drag frame, which changes `objects` without touching history.
   useEffect(() => {
@@ -169,7 +189,7 @@ export function EditorPage() {
     }, 600)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyVersion, layoutId2, loading])
+  }, [historyVersion, layoutId2, loading, saveRetryTick])
 
   // Fluxo autosave (debounced) — no undo history to key off (see useEditorStore.ts), so this
   // debounces directly on the node/connection arrays; moveFlowNodeLive resets the timer on every
@@ -188,7 +208,7 @@ export function EditorPage() {
     }, 600)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flowNodes, flowConnections, layoutId2, loading])
+  }, [flowNodes, flowConnections, layoutId2, loading, saveRetryTick])
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -300,7 +320,7 @@ export function EditorPage() {
           <LibraryPanel onInsert={handleInsert} />
         </aside>
 
-        <main className="flex-1 relative">
+        <main className="flex-1 relative min-w-0 min-h-0">
           <EditorCanvas registerHandle={registerHandle} onDraggingChange={setCanvasDragging} />
 
           <div className="absolute top-3 left-3 flex flex-col gap-1 bg-surface border border-border rounded-lg shadow-sm p-1">
@@ -408,7 +428,7 @@ export function EditorPage() {
           <FlowLibraryPanel onInsert={handleFlowInsert} />
         </aside>
 
-        <main className="flex-1 relative">
+        <main className="flex-1 relative min-w-0 min-h-0">
           <FlowCanvas registerHandle={registerFlowHandle} />
 
           <div className="absolute top-3 left-3 flex flex-col gap-1 bg-surface border border-border rounded-lg shadow-sm p-1">

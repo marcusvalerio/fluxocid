@@ -5,6 +5,11 @@ export interface ObjectRenderProps {
   obj: LayoutObject
   widthPx: number
   lengthPx: number
+  /** True only in ObjectThumbnail (library card preview) — never on the live canvas or export.
+   * Area-type renderers use it to drop their name label and center their icon glyph instead of
+   * corner-anchoring it, since at icon scale the label collides with the pictogram and the card
+   * already shows the name as its own caption below the thumbnail. */
+  compact?: boolean
 }
 
 export type PropertyFieldKind = 'text' | 'number-m' | 'number-deg' | 'number-plain' | 'select' | 'info'

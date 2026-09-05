@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Line } from 'react-konva'
 import type Konva from 'konva'
 import { useEditorStore } from '../state/useEditorStore'
-import { FlowNodeShape } from './FlowNodeShape'
+import { FlowNodeShape, MAX_NODE_NAME_LENGTH } from './FlowNodeShape'
 import { FlowConnectionShape } from './FlowConnectionShape'
-import { FLOW_NODE_SIZE, type FlowNodeType } from '../../../types/flow'
+import { FLOW_NODE_SIZE, FLOW_NODE_TYPE_LABELS, type FlowNodeType } from '../../../types/flow'
 
 const MIN_ZOOM = 0.3
 const MAX_ZOOM = 2.5
@@ -40,6 +40,8 @@ export function FlowCanvas({ registerHandle }: FlowCanvasProps) {
   const [camera, setCameraState] = useState<FlowCamera>({ x: 40, y: 40, zoom: 1 })
   const [tempConnectionEnd, setTempConnectionEnd] = useState<{ x: number; y: number } | null>(null)
   const [cursor, setCursor] = useState<'default' | 'grab' | 'grabbing'>('default')
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null)
+  const [editingValue, setEditingValue] = useState('')
 
   const nodesById = useRef<Map<string, Konva.Group>>(new Map())
   const spaceDownRef = useRef(false)
@@ -61,9 +63,27 @@ export function FlowCanvas({ registerHandle }: FlowCanvasProps) {
   const commitFlowNodePosition = useEditorStore((s) => s.commitFlowNodePosition)
   const setPendingConnectionFrom = useEditorStore((s) => s.setPendingConnectionFrom)
   const addFlowConnection = useEditorStore((s) => s.addFlowConnection)
+  const setFlowNodeProperty = useEditorStore((s) => s.setFlowNodeProperty)
 
   const nodesById_lookup = useMemo(() => new Map(flowNodes.map((n) => [n.id, n])), [flowNodes])
   const pendingFromNode = pendingConnectionFromId ? nodesById_lookup.get(pendingConnectionFromId) : undefined
+  const editingNode = editingNodeId ? nodesById_lookup.get(editingNodeId) : undefined
+
+  function startEditingNode(id: string) {
+    const node = nodesById_lookup.get(id)
+    if (!node) return
+    setEditingNodeId(id)
+    setEditingValue(node.name ?? '')
+  }
+
+  function commitEditingNode() {
+    if (editingNodeId) setFlowNodeProperty(editingNodeId, 'name', editingValue.trim())
+    setEditingNodeId(null)
+  }
+
+  function cancelEditingNode() {
+    setEditingNodeId(null)
+  }
 
   useEffect(() => {
     const el = containerRef.current
@@ -359,10 +379,12 @@ export function FlowCanvas({ registerHandle }: FlowCanvasProps) {
                 node={node}
                 selected={selectedFlowNodeId === node.id}
                 linked={Boolean(node.linkedObjectId)}
+                editing={editingNodeId === node.id}
                 onSelect={selectFlowNode}
                 onDragMove={moveFlowNodeLive}
                 onDragEnd={commitFlowNodePosition}
                 onHandleDragStart={(id) => setPendingConnectionFrom(id)}
+                onStartEdit={startEditingNode}
                 registerRef={(id, n) => {
                   if (n) {
                     n.name(`flow-node-${id}`)
@@ -375,6 +397,35 @@ export function FlowCanvas({ registerHandle }: FlowCanvasProps) {
             ))}
           </Layer>
         </Stage>
+      )}
+      {editingNode && (
+        <input
+          autoFocus
+          type="text"
+          value={editingValue}
+          maxLength={MAX_NODE_NAME_LENGTH}
+          placeholder={FLOW_NODE_TYPE_LABELS[editingNode.type]}
+          onChange={(e) => setEditingValue(e.target.value)}
+          onFocus={(e) => e.target.select()}
+          onBlur={commitEditingNode}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commitEditingNode()
+            } else if (e.key === 'Escape') {
+              e.preventDefault()
+              cancelEditingNode()
+            }
+          }}
+          className="absolute rounded-md border-2 border-primary bg-white px-2 text-sm font-semibold text-text-primary shadow-md focus:outline-none"
+          style={{
+            left: camera.x + editingNode.x * camera.zoom + 14 * camera.zoom,
+            top: camera.y + editingNode.y * camera.zoom,
+            width: (FLOW_NODE_SIZE.width - 28) * camera.zoom,
+            height: FLOW_NODE_SIZE.height * camera.zoom,
+            fontSize: 14 * camera.zoom,
+          }}
+        />
       )}
       {flowNodes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

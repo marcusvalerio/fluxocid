@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, BringToFront, Copy, RotateCcw, RotateCw, SendToBack, Trash2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
+  Copy,
+  RotateCcw,
+  RotateCw,
+  Trash2,
+} from 'lucide-react'
 import { OBJECT_CATALOG } from '../objects/catalog'
 import { useEditorStore } from '../state/useEditorStore'
 import { cmToM, mToCm } from '../../../shared/lib/units'
@@ -24,14 +34,14 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
   const deleteObject = useEditorStore((s) => s.deleteObject)
   const duplicateObject = useEditorStore((s) => s.duplicateObject)
   const rotateObject = useEditorStore((s) => s.rotateObject)
-  const commitObject = useEditorStore((s) => s.commitObject)
-  const objects = useEditorStore((s) => s.objects)
+  const bringSelectedToFront = useEditorStore((s) => s.bringSelectedToFront)
+  const sendSelectedToBack = useEditorStore((s) => s.sendSelectedToBack)
+  const bringSelectedForward = useEditorStore((s) => s.bringSelectedForward)
+  const sendSelectedBackward = useEditorStore((s) => s.sendSelectedBackward)
   const [textDrafts, setTextDrafts] = useState<Record<string, string>>({})
 
   const def = OBJECT_CATALOG[object.objectType]
   const boundsWarning = boundsStatus ? BOUNDS_WARNING_TEXT[boundsStatus] : undefined
-  const maxZ = objects.length ? Math.max(...objects.map((o) => o.zIndex)) : object.zIndex
-  const minZ = objects.length ? Math.min(...objects.map((o) => o.zIndex)) : object.zIndex
   const textDraftSource = def.propertyFields
     .filter((field) => field.kind === 'text')
     .map((field) => field.key === 'name' ? object.name ?? '' : String(object.properties[field.key] ?? ''))
@@ -53,16 +63,6 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
     setProperty(object.id, key, value)
   }
 
-  function bringToFront() {
-    if (objects.length < 2 || object.zIndex === maxZ) return
-    commitObject(object.id, { zIndex: maxZ + 1 })
-  }
-
-  function sendToBack() {
-    if (objects.length < 2 || object.zIndex === minZ) return
-    commitObject(object.id, { zIndex: minZ - 1 })
-  }
-
   return (
     <div className="min-w-0 space-y-4 overflow-hidden">
       {hasOverlap && (
@@ -80,12 +80,6 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
       <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
         <h2 className="font-heading text-base font-semibold text-text-primary truncate min-w-0">{def.label}</h2>
         <div className="flex flex-wrap justify-end gap-1 shrink-0 max-w-full">
-          <IconButton label="Trazer para frente" onClick={bringToFront}>
-            <BringToFront size={18} />
-          </IconButton>
-          <IconButton label="Enviar para trás" onClick={sendToBack}>
-            <SendToBack size={18} />
-          </IconButton>
           <IconButton label="Girar -90°" onClick={() => rotateObject(object.id, -90)}>
             <RotateCcw size={18} />
           </IconButton>
@@ -97,6 +91,24 @@ export function PropertiesPanel({ object, hasOverlap, boundsStatus }: Properties
           </IconButton>
           <IconButton label="Excluir" onClick={() => deleteObject(object.id)}>
             <Trash2 size={18} className="text-danger" />
+          </IconButton>
+        </div>
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-text-secondary mb-2">Camadas</p>
+        <div className="grid grid-cols-4 gap-1">
+          <IconButton label="Trazer para frente" onClick={bringSelectedToFront}>
+            <ChevronsUp size={18} />
+          </IconButton>
+          <IconButton label="Avançar uma camada" onClick={bringSelectedForward}>
+            <ChevronUp size={18} />
+          </IconButton>
+          <IconButton label="Recuar uma camada" onClick={sendSelectedBackward}>
+            <ChevronDown size={18} />
+          </IconButton>
+          <IconButton label="Enviar para trás" onClick={sendSelectedToBack}>
+            <ChevronsDown size={18} />
           </IconButton>
         </div>
       </div>

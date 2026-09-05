@@ -23,11 +23,11 @@ status (`DEFINIDO`, `PROPOSTO`).
 
 | ID | Descrição | Prioridade | Status |
 |----|-----------|-----------|--------|
-| RF-01 | O usuário deve poder criar uma conta com e-mail e senha. | MVP | PROPOSTO |
-| RF-02 | O usuário deve poder autenticar-se com e-mail e senha. | MVP | PROPOSTO |
-| RF-03 | O usuário deve poder encerrar sessão (logout). | MVP | PROPOSTO |
-| RF-04 | O usuário deve poder recuperar/redefinir senha. | P1 | PROPOSTO |
-| RF-05 | O sistema deve isolar os dados de cada usuário/organização (nenhum usuário acessa layouts de outra organização sem permissão). | MVP | DEFINIDO |
+| RF-01 | O usuário deve poder criar uma conta informando e-mail; o sistema gera uma senha temporária e a envia por e-mail, exigindo troca no primeiro acesso (Fase 9). | MVP | DEFINIDO |
+| RF-02 | O usuário deve poder autenticar-se com e-mail e senha. | MVP | DEFINIDO |
+| RF-03 | O usuário deve poder encerrar sessão (logout). | MVP | DEFINIDO |
+| RF-04 | O usuário deve poder recuperar/redefinir senha. | P1 | DEFINIDO |
+| RF-05 | O sistema deve isolar os dados de cada usuário (nenhum usuário acessa, lista ou modifica projetos de outro usuário). | MVP | DEFINIDO |
 
 ### 1.2 Gestão de layouts (projetos)
 
@@ -132,6 +132,19 @@ status (`DEFINIDO`, `PROPOSTO`).
 |----|-----------|-----------|--------|
 | RF-99 | O sistema deve exibir um painel de métricas do projeto: área total, área de armazenagem, área operacional, área de circulação, ocupação, posições de pallet, quantidade de equipamentos, quantidade de docas, comprimento de corredores, quantidade de áreas e quantidade de etapas de fluxo. | P1 | DEFINIDO |
 | RF-100 | Empilhadeira, paleteira e carrinho de carga/plataforma devem permitir registrar capacidade (kg), raio de giro (m) e largura mínima de corredor (m) — informativo nesta fase, preparado para validações espaciais automáticas futuras. | P2 | DEFINIDO |
+
+### 1.11 Fase 8 — Inteligência visual e logística
+
+| ID | Descrição | Prioridade | Status |
+|----|-----------|-----------|--------|
+| RF-101 | Todo objeto da biblioteca deve ter um desenho técnico 2D real (nunca quadrado colorido, emoji ou ícone genérico) exibido no card da biblioteca, e o objeto inserido no canvas (e na exportação PNG) deve usar exatamente o mesmo desenho — um único sistema de símbolos por tipo de objeto. | MVP | DEFINIDO |
+| RF-102 | A biblioteca deve incluir os seguintes objetos de estrutura, cada um com representação visual própria: coluna/pilar, portão, escada. | P1 | DEFINIDO |
+| RF-103 | A biblioteca deve incluir as seguintes variantes de armazenagem, cada uma com representação visual própria: drive-in, push-back, flow rack, cantilever. | P1 | DEFINIDO |
+| RF-104 | A biblioteca deve incluir os seguintes equipamentos, cada um com representação visual própria: reach truck, rebocador, order picker. | P1 | DEFINIDO |
+| RF-105 | A biblioteca deve incluir os seguintes objetos de unitização, cada um com representação visual própria: caixa, container, gaiola (pallet já existente). | P1 | DEFINIDO |
+| RF-106 | Um corredor deve permitir definir um tipo de tráfego (pedestres/empilhadeira/misto/pallets/picking) e um sentido (mão única/mão dupla); o painel de propriedades deve exibir a largura mínima recomendada calculada para o tipo selecionado. | P1 | DEFINIDO |
+| RF-107 | O sistema deve sinalizar visualmente (contorno no canvas) e em texto (painel de alertas) as seguintes situações, cada uma com severidade de atenção ou conflito: objeto invadindo um corredor, corredor com largura abaixo da recomendação, equipamento móvel sobreposto a parede/coluna, duas áreas operacionais sobrepostas, doca obstruída total ou parcialmente — sem bloquear a ação do usuário. | P1 | DEFINIDO |
+| RF-108 | O painel de métricas do projeto deve incluir uma seção de alertas listando cada violação de regra espacial com uma mensagem legível (ex.: "Porta-paletes invade o corredor C03."), atualizada conforme o layout muda, com um estado "nenhum conflito" quando não há violações. | P1 | DEFINIDO |
 
 ## 2. Requisitos não funcionais
 

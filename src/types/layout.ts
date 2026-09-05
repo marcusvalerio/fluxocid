@@ -37,6 +37,19 @@ export type ObjectTypeKey =
   | 'safety-zone'
   | 'pedestrian-lane'
   | 'platform-cart'
+  | 'column'
+  | 'gate'
+  | 'stairs'
+  | 'drive-in'
+  | 'push-back'
+  | 'flow-rack'
+  | 'cantilever'
+  | 'reach-truck'
+  | 'tug'
+  | 'order-picker'
+  | 'box'
+  | 'container'
+  | 'cage-pallet'
 
 /** All measurements (x, y, width, length) are in centimeters. Rotation is in degrees [0, 360). */
 export interface LayoutObject {
@@ -57,6 +70,8 @@ export interface Layout {
   id: string
   organizationId: string
   name: string
+  /** Optional free-text project description (Fase 9 — "Meus Projetos"). */
+  description?: string
   scalePxPerMeter: number
   gridStepM: number
   widthM?: number
@@ -72,11 +87,12 @@ export interface Layout {
 
 export type LayoutSummary = Pick<
   Layout,
-  'id' | 'organizationId' | 'name' | 'createdAt' | 'updatedAt'
+  'id' | 'organizationId' | 'name' | 'description' | 'createdAt' | 'updatedAt'
 >
 
 export interface NewLayoutInput {
   name: string
+  description?: string
   widthM?: number
   heightM?: number
 }

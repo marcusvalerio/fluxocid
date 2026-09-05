@@ -5,11 +5,11 @@ const COLOR = '#7C3AED'
 
 /** A picking zone: translucent tinted floor area plus a small basket pictogram, so it reads
  * distinctly from the generic Área object's plain dashed rectangle. */
-export function AreaPicking({ widthPx, lengthPx, obj }: ObjectRenderProps) {
+export function AreaPicking({ widthPx, lengthPx, obj, compact }: ObjectRenderProps) {
   const label = obj.name ?? 'Picking'
-  const iconSize = Math.min(28, widthPx * 0.3, lengthPx * 0.5)
-  const ix = 10
-  const iy = 10
+  const iconSize = compact ? Math.min(widthPx, lengthPx) * 0.42 : Math.min(28, widthPx * 0.3, lengthPx * 0.5)
+  const ix = compact ? (widthPx - iconSize) / 2 : 10
+  const iy = compact ? (lengthPx - iconSize) / 2 + iconSize * 0.3 : 10
 
   return (
     <>
@@ -28,7 +28,9 @@ export function AreaPicking({ widthPx, lengthPx, obj }: ObjectRenderProps) {
         strokeWidth={1.5}
         lineCap="round"
       />
-      <Text text={label} width={widthPx} height={lengthPx} align="center" verticalAlign="middle" fill={COLOR} fontStyle="600" fontSize={14} listening={false} />
+      {!compact && (
+        <Text text={label} width={widthPx} height={lengthPx} align="center" verticalAlign="middle" fill={COLOR} fontStyle="600" fontSize={14} listening={false} />
+      )}
     </>
   )
 }

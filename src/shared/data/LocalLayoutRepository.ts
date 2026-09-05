@@ -27,6 +27,10 @@ function writeAll(layouts: Layout[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts))
 }
 
+/** Flushes a specific layout's current in-memory state straight to localStorage, bypassing the
+ * write queue below — used as a synchronous safety net on `pagehide`/`beforeunload` (see
+ * shared/data/localPersistenceFlush.ts, which reads the live editor store and calls this
+ * directly) so the very last edit is never lost if the debounced autosave hadn't completed yet. */
 export function flushLocalLayoutSnapshot(
   id: string,
   objects: LayoutObject[],
@@ -92,7 +96,9 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', flushPendingSnapshots)
 }
 
-/** localStorage-backed implementation, used until the remote repository is configured. */
+/** localStorage-backed implementation — active before login, and as the read source for the
+ * Fase 9 local-to-remote migration. See shared/data/repository.ts for the swappable facade that
+ * every feature actually imports. */
 export class LocalLayoutRepository implements LayoutRepository {
   /** Serialize autosave writes so Layout and Fluxo can never overwrite each other concurrently. */
   private writeQueue: Promise<void> = Promise.resolve()
@@ -105,10 +111,11 @@ export class LocalLayoutRepository implements LayoutRepository {
 
   async listLayouts(): Promise<LayoutSummary[]> {
     return readAll()
-      .map(({ id, organizationId, name, createdAt, updatedAt }) => ({
+      .map(({ id, organizationId, name, description, createdAt, updatedAt }) => ({
         id,
         organizationId,
         name,
+        description,
         createdAt,
         updatedAt,
       }))
@@ -125,6 +132,7 @@ export class LocalLayoutRepository implements LayoutRepository {
       id: createId(),
       organizationId: LOCAL_ORG_ID,
       name: input.name,
+      description: input.description,
       scalePxPerMeter: 50,
       gridStepM: 0.1,
       widthM: input.widthM,
@@ -146,6 +154,23 @@ export class LocalLayoutRepository implements LayoutRepository {
     layout.name = name
     layout.updatedAt = new Date().toISOString()
     writeAll(layouts)
+  }
+
+  async duplicateLayout(id: string): Promise<Layout> {
+    const layouts = readAll()
+    const source = layouts.find((l) => l.id === id)
+    if (!source) throw new Error('Layout não encontrado.')
+    const now = new Date().toISOString()
+    const copy: Layout = {
+      ...source,
+      id: createId(),
+      name: `${source.name} (cópia)`,
+      createdAt: now,
+      updatedAt: now,
+    }
+    layouts.push(copy)
+    writeAll(layouts)
+    return copy
   }
 
   async deleteLayout(id: string): Promise<void> {
@@ -204,5 +229,3 @@ export class LocalLayoutRepository implements LayoutRepository {
     })
   }
 }
-
-export const layoutRepository: LayoutRepository = new LocalLayoutRepository()

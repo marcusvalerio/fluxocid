@@ -2,6 +2,7 @@ import { Arrow, Label, Tag, Text } from 'react-konva'
 import { cmToPx } from '../../../shared/lib/units'
 import { FLOW_CONNECTION_STYLE, type FlowConnection, type FlowNode } from '../../../types/flow'
 import type { LayoutObject } from '../../../types/layout'
+import { routeConnection } from '../flow/connectionRouting'
 
 interface FlowOverlayProps {
   flowConnections: FlowConnection[]
@@ -35,14 +36,24 @@ export function FlowOverlay({ flowConnections, flowNodes, objects, pxPerMeter }:
     <>
       {segments.map(({ conn, fromObj, toObj }) => {
         const style = FLOW_CONNECTION_STYLE[conn.flowType]
-        const x1 = cmToPx(fromObj.x + fromObj.width / 2, pxPerMeter)
-        const y1 = cmToPx(fromObj.y + fromObj.length / 2, pxPerMeter)
-        const x2 = cmToPx(toObj.x + toObj.width / 2, pxPerMeter)
-        const y2 = cmToPx(toObj.y + toObj.length / 2, pxPerMeter)
+        const fromBox = {
+          x: cmToPx(fromObj.x, pxPerMeter),
+          y: cmToPx(fromObj.y, pxPerMeter),
+          width: cmToPx(fromObj.width, pxPerMeter),
+          height: cmToPx(fromObj.length, pxPerMeter),
+        }
+        const toBox = {
+          x: cmToPx(toObj.x, pxPerMeter),
+          y: cmToPx(toObj.y, pxPerMeter),
+          width: cmToPx(toObj.width, pxPerMeter),
+          height: cmToPx(toObj.length, pxPerMeter),
+        }
+        const { points } = routeConnection(fromBox, toBox)
         return (
           <Arrow
             key={conn.id}
-            points={[x1, y1, x2, y2]}
+            points={points}
+            bezier
             stroke={style.stroke}
             fill={style.stroke}
             strokeWidth={style.strokeWidth}

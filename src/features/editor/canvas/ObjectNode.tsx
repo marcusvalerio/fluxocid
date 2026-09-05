@@ -21,6 +21,14 @@ interface ObjectNodeProps {
   hasOverlap: boolean
   /** Whether the object's footprint sits inside, straddles, or is entirely off the environment. */
   boundsStatus: BoundsStatus
+  /** True when this object is involved in a 🔴 critical spatial violation beyond the two above
+   * (corredor bloqueado, conflito equipamento×estrutura, doca bloqueada) — see
+   * spatialRules.computeSpatialViolations. Reuses the same red outline as hasOverlap. */
+  hasCriticalViolation?: boolean
+  /** True when this object is involved in a 🟡 warning-level spatial violation beyond boundsStatus
+   * (corredor estreito, área sobreposta, doca parcialmente bloqueada). Reuses the same orange
+   * outline as boundsStatus !== 'inside'. */
+  hasWarningViolation?: boolean
   registerRef: (id: string, node: Konva.Group | null) => void
   onSnapGuideChange: (guides: SnapGuides | null) => void
   onDraggingChange: (dragging: boolean) => void
@@ -32,6 +40,8 @@ export function ObjectNode({
   selected,
   hasOverlap,
   boundsStatus,
+  hasCriticalViolation = false,
+  hasWarningViolation = false,
   registerRef,
   onSnapGuideChange,
   onDraggingChange,
@@ -227,7 +237,7 @@ export function ObjectNode({
         fill="rgba(0,0,0,0.001)"
         listening
       />
-      {hasOverlap && (
+      {(hasOverlap || hasCriticalViolation) && (
         <Rect
           width={widthPx}
           height={lengthPx}
@@ -237,7 +247,7 @@ export function ObjectNode({
           listening={false}
         />
       )}
-      {boundsStatus !== 'inside' && (
+      {(boundsStatus !== 'inside' || hasWarningViolation) && (
         <Rect
           width={widthPx}
           height={lengthPx}

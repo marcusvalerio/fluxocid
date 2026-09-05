@@ -163,6 +163,134 @@ describe('useEditorStore', () => {
     })
   })
 
+  describe('z-order (Fase 9)', () => {
+    function addThree() {
+      useEditorStore.getState().addObject('pallet', 100, 100)
+      useEditorStore.getState().addObject('pallet', 200, 200)
+      useEditorStore.getState().addObject('pallet', 300, 300)
+      const [a, b, c] = useEditorStore.getState().objects
+      return { a, b, c }
+    }
+
+    function orderedIds() {
+      return [...useEditorStore.getState().objects].sort((x, y) => x.zIndex - y.zIndex).map((o) => o.id)
+    }
+
+    it('bringSelectedToFront moves the selected object above all others', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectObject(a.id)
+      useEditorStore.getState().bringSelectedToFront()
+      expect(orderedIds()).toEqual([b.id, c.id, a.id])
+    })
+
+    it('sendSelectedToBack moves the selected object below all others', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectObject(c.id)
+      useEditorStore.getState().sendSelectedToBack()
+      expect(orderedIds()).toEqual([c.id, a.id, b.id])
+    })
+
+    it('bringSelectedForward swaps with the next-higher unselected neighbor', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectObject(a.id)
+      useEditorStore.getState().bringSelectedForward()
+      expect(orderedIds()).toEqual([b.id, a.id, c.id])
+    })
+
+    it('bringSelectedForward is a no-op when already at the front', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectObject(c.id)
+      useEditorStore.getState().bringSelectedForward()
+      expect(orderedIds()).toEqual([a.id, b.id, c.id])
+    })
+
+    it('sendSelectedBackward swaps with the next-lower unselected neighbor', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectObject(c.id)
+      useEditorStore.getState().sendSelectedBackward()
+      expect(orderedIds()).toEqual([a.id, c.id, b.id])
+    })
+
+    it('preserves relative order among multiple selected objects when brought to front', () => {
+      const { a, b, c } = addThree()
+      useEditorStore.getState().selectMany([a.id, b.id], false)
+      useEditorStore.getState().bringSelectedToFront()
+      expect(orderedIds()).toEqual([c.id, a.id, b.id])
+    })
+
+    it('does nothing when nothing is selected', () => {
+      addThree()
+      const before = orderedIds()
+      useEditorStore.getState().bringSelectedToFront()
+      expect(orderedIds()).toEqual(before)
+    })
+
+    it('supports undo after a z-order change', () => {
+      const { a, b, c } = addThree()
+      const before = orderedIds()
+      useEditorStore.getState().selectObject(a.id)
+      useEditorStore.getState().bringSelectedToFront()
+      expect(orderedIds()).toEqual([b.id, c.id, a.id])
+      useEditorStore.getState().undo()
+      expect(orderedIds()).toEqual(before)
+    })
+  })
+
+  describe('áreas como camada de fundo (Fase 9)', () => {
+    function orderedIds() {
+      return [...useEditorStore.getState().objects].sort((x, y) => x.zIndex - y.zIndex).map((o) => o.id)
+    }
+
+    it('uma área inserida depois de outros objetos ainda fica atrás deles', () => {
+      useEditorStore.getState().addObject('rack', 100, 100)
+      const rack = useEditorStore.getState().objects[0]
+      useEditorStore.getState().addObject('area', 500, 500)
+      const area = useEditorStore.getState().objects[1]
+
+      expect(area.zIndex).toBeLessThan(rack.zIndex)
+      expect(orderedIds()).toEqual([area.id, rack.id])
+    })
+
+    it('um objeto comum inserido depois de uma área continua na frente dela', () => {
+      useEditorStore.getState().addObject('area', 500, 500)
+      const area = useEditorStore.getState().objects[0]
+      useEditorStore.getState().addObject('rack', 100, 100)
+      const rack = useEditorStore.getState().objects[1]
+
+      expect(rack.zIndex).toBeGreaterThan(area.zIndex)
+      expect(orderedIds()).toEqual([area.id, rack.id])
+    })
+
+    it('duplicar uma área mantém a cópia atrás dos objetos comuns', () => {
+      useEditorStore.getState().addObject('rack', 100, 100)
+      const rack = useEditorStore.getState().objects[0]
+      useEditorStore.getState().addObject('area', 500, 500)
+      const area = useEditorStore.getState().objects[1]
+
+      useEditorStore.getState().duplicateObject(area.id)
+      const copy = useEditorStore.getState().objects.find((o) => o.id !== area.id && o.id !== rack.id)!
+
+      expect(copy.zIndex).toBeLessThan(rack.zIndex)
+      expect(orderedIds()[orderedIds().length - 1]).toBe(rack.id)
+    })
+
+    it('duplicateSelected também mantém áreas atrás ao duplicar objetos mistos', () => {
+      useEditorStore.getState().addObject('rack', 100, 100)
+      const rack = useEditorStore.getState().objects[0]
+      useEditorStore.getState().addObject('area', 500, 500)
+      const area = useEditorStore.getState().objects[1]
+
+      useEditorStore.getState().selectMany([rack.id, area.id], false)
+      useEditorStore.getState().duplicateSelected()
+
+      const all = useEditorStore.getState().objects
+      const areaCopy = all.find((o) => o.category === 'area' && o.id !== area.id)!
+      const rackCopy = all.find((o) => o.category !== 'area' && o.id !== rack.id)!
+      expect(areaCopy.zIndex).toBeLessThan(rack.zIndex)
+      expect(areaCopy.zIndex).toBeLessThan(rackCopy.zIndex)
+    })
+  })
+
   describe('align and distribute', () => {
     it('aligns selected objects to the left edge of the group bounding box', () => {
       useEditorStore.getState().addObject('pallet', 100, 100) // -> x=40
