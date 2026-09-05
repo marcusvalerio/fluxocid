@@ -21,16 +21,19 @@ mesmo projeto e são persistidas juntas.
 | [`docs/USER_FLOWS.md`](docs/USER_FLOWS.md) | Fluxos de uso, incluindo considerações mobile |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Arquitetura do frontend e do editor 2D |
 | [`docs/TECH_STACK.md`](docs/TECH_STACK.md) | Tecnologias escolhidas e justificativa |
-| [`docs/DATABASE.md`](docs/DATABASE.md) | Modelo de dados |
+| [`docs/DATABASE.md`](docs/DATABASE.md) | Modelo de dados (Cloudflare D1) |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Passos manuais de deploy (conta Cloudflare, D1, Resend) |
 | [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) | Cores, tipografia, componentes |
 | [`docs/UX.md`](docs/UX.md) | Diretrizes de interação do editor, mobile-first |
 
 ## Stack
 
 React + TypeScript + Vite, Konva/react-konva (canvas 2D), Zustand
-(estado), Tailwind CSS. Persistência hoje é local (`localStorage`),
-atrás de uma interface de repositório que será trocada por Supabase
-quando as credenciais forem configuradas — ver `docs/TECH_STACK.md`.
+(estado), Tailwind CSS no frontend; Cloudflare Workers + D1 + Hono no
+backend (conta real, e-mail/senha, projetos por usuário — ver
+`docs/TECH_STACK.md`). Um visitante sem sessão continua usando o editor
+inteiramente no navegador, com persistência local (`localStorage`)
+atrás da mesma interface de repositório.
 
 ## Rodando localmente
 
@@ -123,10 +126,29 @@ npm run lint      # lint (oxlint)
       Layout+Fluxo após reload — 63 testes automatizados, sem
       regressões encontradas
 
-Fora do escopo desta etapa (aguardando instrução): Supabase,
-autenticação, backend, banco de dados em nuvem, editor 3D, deploy
-automático. O deploy de teste é feito manualmente no Vercel pelo
-responsável do produto.
+### Roadmap — Fase 8 e Fase 9
+
+- [x] Fase 8 — Sistema de símbolos técnicos, catálogo de objetos
+      expandido (estrutura/armazenagem/equipamentos/unitização),
+      corredor inteligente (tipo/sentido) com regras espaciais
+      ampliadas, painel de análise/alertas
+- [x] Fase 9 — Conta, persistência real e experiência de projeto:
+      backend próprio em **Cloudflare Workers + D1 + Hono** (nunca
+      Supabase — decisão explícita, ver `docs/TECH_STACK.md`), cadastro
+      com senha temporária por e-mail e troca obrigatória no primeiro
+      acesso, sessão via cookie `HttpOnly`, projetos isolados por
+      usuário, persistência remota com autosave e estados discretos,
+      migração aditiva localStorage → D1, z-order consolidado, áreas
+      sempre como camada de fundo, edição inline do nome de um nó de
+      Fluxo direto no canvas (sem `window.prompt`), conexões de Fluxo
+      como curvas com roteamento direcional básico — ver
+      `docs/DEPLOYMENT.md` para os passos manuais de configuração da
+      conta Cloudflare/Resend necessários antes de publicar em produção.
+
+Fora do escopo até aqui (aguardando instrução): editor 3D, times/
+organizações compartilhadas, deploy automático (CI/CD). O deploy de
+teste do frontend é feito manualmente pelo responsável do produto; o
+Worker é publicado via `wrangler deploy` (`docs/DEPLOYMENT.md`).
 
 ## Biblioteca de objetos
 

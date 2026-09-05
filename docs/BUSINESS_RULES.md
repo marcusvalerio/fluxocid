@@ -88,8 +88,11 @@
 
 ## 5. Persistência e propriedade dos dados
 
-- BR-40: Um layout pertence a uma organização (workspace); usuários só
-  acessam layouts de organizações às quais pertencem.
+- BR-40: Um projeto (Layout + Fluxo) pertence a um único usuário; ninguém
+  acessa, lista, renomeia ou exclui o projeto de outro usuário — isolamento
+  por dono, aplicado na própria consulta ao banco, não só na interface
+  (ver `ARCHITECTURE.md` § 3 e `DATABASE.md` § 3). Não há conceito de
+  organização/workspace compartilhado nesta fase.
 - BR-41: Autosave ocorre em intervalos curtos (ex.: a cada alteração
   relevante, com debounce de ~1–2s) e/ou ao perder foco/fechar o editor;
   o usuário também pode forçar salvar manualmente.

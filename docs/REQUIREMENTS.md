@@ -23,11 +23,11 @@ status (`DEFINIDO`, `PROPOSTO`).
 
 | ID | Descrição | Prioridade | Status |
 |----|-----------|-----------|--------|
-| RF-01 | O usuário deve poder criar uma conta com e-mail e senha. | MVP | PROPOSTO |
-| RF-02 | O usuário deve poder autenticar-se com e-mail e senha. | MVP | PROPOSTO |
-| RF-03 | O usuário deve poder encerrar sessão (logout). | MVP | PROPOSTO |
-| RF-04 | O usuário deve poder recuperar/redefinir senha. | P1 | PROPOSTO |
-| RF-05 | O sistema deve isolar os dados de cada usuário/organização (nenhum usuário acessa layouts de outra organização sem permissão). | MVP | DEFINIDO |
+| RF-01 | O usuário deve poder criar uma conta informando e-mail; o sistema gera uma senha temporária e a envia por e-mail, exigindo troca no primeiro acesso (Fase 9). | MVP | DEFINIDO |
+| RF-02 | O usuário deve poder autenticar-se com e-mail e senha. | MVP | DEFINIDO |
+| RF-03 | O usuário deve poder encerrar sessão (logout). | MVP | DEFINIDO |
+| RF-04 | O usuário deve poder recuperar/redefinir senha. | P1 | DEFINIDO |
+| RF-05 | O sistema deve isolar os dados de cada usuário (nenhum usuário acessa, lista ou modifica projetos de outro usuário). | MVP | DEFINIDO |
 
 ### 1.2 Gestão de layouts (projetos)
 

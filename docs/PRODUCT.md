@@ -125,17 +125,18 @@ Detalhamento técnico das entidades em `docs/DATABASE.md`.
 > requisitos definidos. Decisões de baixo risco já foram assumidas com
 > autonomia; decisões de maior impacto estão sinalizadas para validação.
 
-- **DECISÃO PROPOSTA:** o produto terá o conceito de "Organização"
-  (workspace) desde o início, mesmo que o MVP suporte apenas um usuário
-  por organização inicialmente, para evitar retrabalho de modelagem
-  depois. *(Baixo risco — seguindo com autonomia.)*
+- **REVISTO (Fase 9):** a proposta original de um conceito de
+  "Organização" (workspace) desde o início não foi levada adiante — o
+  modelo implementado é projetos isolados por usuário individual, sem
+  workspace/organização compartilhados (ver `docs/BUSINESS_RULES.md`
+  BR-40, `docs/DATABASE.md`). Pode ser revisitado se o produto evoluir
+  para exigir colaboração entre usuários.
 - **DECISÃO PROPOSTA:** unidade de medida padrão é o metro, com
   precisão de centímetros (2 casas decimais). *(Baixo risco — seguindo
   com autonomia.)*
-- **A VALIDAR COM O USUÁRIO:** modelo de autenticação — usar
-  autenticação via Supabase Auth (e-mail/senha, com possibilidade de
-  login social depois) é a proposta em `docs/ARCHITECTURE.md`. Isso
-  exigirá que o usuário crie um projeto Supabase e forneça as
-  credenciais (URL + chave pública) quando chegarmos à Fase 4. Até lá,
-  o editor funciona com persistência local (localStorage/IndexedDB) para
-  não bloquear o desenvolvimento do núcleo do produto.
+- **RESOLVIDO (Fase 9):** modelo de autenticação — conta própria
+  (e-mail/senha) sobre backend Cloudflare Workers + D1, não Supabase;
+  decisão explícita do usuário, ver `docs/TECH_STACK.md` § Backend.
+  Cadastro gera uma senha temporária enviada por e-mail, com troca
+  obrigatória no primeiro acesso. Um visitante sem conta continua
+  usando o editor com persistência local (localStorage/IndexedDB).

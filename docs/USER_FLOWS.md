@@ -1,20 +1,34 @@
 # FluxoCit — Fluxos de Usuário
 
-## 1. Cadastro e login
+## 1. Cadastro e login (Fase 9)
 
-1. Usuário acessa o FluxoCit sem sessão ativa → é direcionado para a
-   tela de login.
-2. Usuário sem conta escolhe "Criar conta" → informa e-mail e senha →
-   conta criada → sessão iniciada → redireciona para lista de layouts.
-3. Usuário com conta informa e-mail e senha → sessão iniciada →
-   redireciona para lista de layouts.
-4. Falha de autenticação → mensagem de erro clara, sem expor detalhes
+1. Usuário acessa o FluxoCit sem sessão ativa → pode navegar como
+   visitante (persistência local) ou ir para a tela de login.
+2. Usuário sem conta escolhe "Criar conta" → informa apenas o e-mail →
+   conta criada com uma **senha temporária gerada pelo sistema**,
+   enviada por e-mail (nunca exibida na tela) → usuário é levado ao
+   login.
+3. Usuário informa e-mail + senha temporária recebida por e-mail →
+   sessão iniciada → **redirecionado obrigatoriamente para a troca de
+   senha** antes de acessar qualquer outra tela (não é possível pular).
+4. Após definir a nova senha → redireciona para a lista de projetos.
+5. Em acessos seguintes, usuário com conta já definida informa e-mail e
+   senha → sessão iniciada → redireciona direto para a lista de projetos.
+6. "Esqueci minha senha" → usuário informa e-mail → se existir conta,
+   recebe um link/token de redefinição de uso único por e-mail (nunca
+   confirma nem nega a existência da conta na tela, para não vazar quais
+   e-mails estão cadastrados).
+7. Falha de autenticação → mensagem de erro clara, sem expor detalhes
    sensíveis (ex.: não diferenciar "usuário não existe" de "senha
    errada").
+8. Se o usuário tinha projetos salvos localmente (visitante) antes de
+   criar conta, a lista de projetos oferece migrá-los para a conta —
+   nunca automático, nunca sobrescreve um projeto remoto existente (ver
+   `docs/ARCHITECTURE.md` § 2.4).
 
 ## 2. Lista de layouts (dashboard)
 
-1. Usuário autenticado vê a lista de layouts da sua organização.
+1. Usuário autenticado vê a lista dos próprios projetos (Layout + Fluxo).
 2. Lista vazia → estado vazio com call-to-action "Criar novo layout".
 3. Usuário pode: criar novo layout, abrir layout existente, renomear,
    excluir (com confirmação), duplicar (pós-MVP).

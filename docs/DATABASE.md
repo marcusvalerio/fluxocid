@@ -1,112 +1,109 @@
 # FluxoCit — Modelo de Dados
 
-> Modelo relacional alvo (Postgres via Supabase — ver `TECH_STACK.md`).
-> Até a integração com Supabase ser ativada (requer credenciais do
-> usuário), o mesmo modelo lógico é usado em um repositório local
-> (IndexedDB/localStorage) atrás da interface `LayoutRepository`
-> descrita em `ARCHITECTURE.md`, para que a migração não exija
-> remodelagem.
+> Esquema real do **Cloudflare D1** (SQLite), definido em
+> `worker/migrations/0001_init.sql` e usado pelo Worker (`worker/src/db.ts`).
+> Ver `TECH_STACK.md` § Backend e `ARCHITECTURE.md` § 3 para o porquê da
+> escolha de Cloudflare D1 em vez da proposta original (Supabase/Postgres,
+> nunca implementada).
+>
+> Enquanto não há sessão autenticada, o app roda inteiramente no
+> navegador contra um repositório local (IndexedDB/localStorage, ver
+> `ARCHITECTURE.md` § 2.3) que não replica este esquema — guarda apenas
+> os campos de `Layout`/`LayoutObject`/board de Fluxo usados pelo editor.
+> A migração local→D1 (§ 2.4 de `ARCHITECTURE.md`) só cria projetos
+> novos no D1; nunca lê/escreve as tabelas abaixo a partir do navegador.
 
-## 1. Diagrama lógico (visão geral)
+## 1. Diagrama lógico
 
 ```
-organizations 1───* memberships *───1 users (auth.users do Supabase)
-organizations 1───* layouts
-layouts       1───* layout_objects
+users 1───* sessions
+users 1───* password_reset_tokens
+users 1───* projects
 ```
+
+Não há tabela de organizações/memberships: cada usuário só vê e edita
+seus próprios projetos (isolamento por `user_id`, ver
+`ARCHITECTURE.md` § 3) — o produto não modela times/workspaces
+compartilhados nesta fase.
 
 ## 2. Tabelas
 
-### 2.1 `organizations`
+### 2.1 `users`
 
 | Coluna | Tipo | Descrição |
 |--------|------|-----------|
-| id | uuid, PK | |
-| name | text, not null | Nome da organização/workspace. |
-| created_at | timestamptz, default now() | |
+| id | TEXT, PK | UUID gerado pelo Worker. |
+| email | TEXT, UNIQUE, NOCASE | Login único, case-insensitive. |
+| password_hash | TEXT | PBKDF2-HMAC-SHA256 (100k iterações) + salt, nunca texto puro (ver `TECH_STACK.md`). |
+| must_change_password | INTEGER (0/1) | Ligado no cadastro (senha temporária) e após um pedido de recuperação de senha; força a troca antes de liberar qualquer outra rota. |
+| created_at / updated_at | TEXT (ISO 8601) | |
 
-### 2.2 `memberships`
-
-Relaciona usuários (do Supabase Auth) a organizações.
-
-| Coluna | Tipo | Descrição |
-|--------|------|-----------|
-| id | uuid, PK | |
-| organization_id | uuid, FK → organizations.id | |
-| user_id | uuid, FK → auth.users.id | |
-| role | text, enum (`owner`, `editor`, `viewer`) | Papel do usuário na organização. MVP: todo usuário criado vira `owner` da sua própria organização pessoal, criada automaticamente no cadastro. |
-| created_at | timestamptz | |
-
-Constraint: `unique (organization_id, user_id)`.
-
-### 2.3 `layouts`
+### 2.2 `sessions`
 
 | Coluna | Tipo | Descrição |
 |--------|------|-----------|
-| id | uuid, PK | |
-| organization_id | uuid, FK → organizations.id | |
-| name | text, not null | |
-| scale_px_per_meter | numeric, not null, default 50 | Escala de referência do canvas (BR-02). |
-| grid_step_m | numeric, not null, default 0.1 | Passo de snap à grade (BR-20). |
-| width_m | numeric, nullable | Largura de referência do espaço (opcional, informativo). |
-| height_m | numeric, nullable | Altura/profundidade de referência do espaço (opcional). |
-| created_by | uuid, FK → auth.users.id | |
-| created_at | timestamptz, default now() | |
-| updated_at | timestamptz, default now() | Atualizado a cada save (autosave inclusive). |
+| id | TEXT, PK | **Hash SHA-256** do token de sessão — o token bruto nunca é persistido, só existe no cookie `HttpOnly` do navegador. |
+| user_id | TEXT, FK → users.id, ON DELETE CASCADE | |
+| created_at / expires_at | TEXT (ISO 8601) | Sessão expira por tempo; login/troca de senha emite uma nova. |
 
-### 2.4 `layout_objects`
+Índice: `idx_sessions_user_id` em `(user_id)`.
+
+### 2.3 `password_reset_tokens`
 
 | Coluna | Tipo | Descrição |
 |--------|------|-----------|
-| id | uuid, PK | |
-| layout_id | uuid, FK → layouts.id, on delete cascade | |
-| object_type | text, not null | Chave do tipo no catálogo (ex.: `pallet`, `rack`, `wall`, `forklift`). Ver `ARCHITECTURE.md` § catálogo de objetos. |
-| category | text, not null | Categoria (`structure`, `storage`, `pallet`, `equipment`, `area`, `flow`, `other`) — desnormalizado do catálogo para facilitar consulta/filtro. |
-| name | text, nullable | Nome/identificação definido pelo usuário (BR-51). |
-| x_cm | integer, not null | Posição X em centímetros (BR-01). |
-| y_cm | integer, not null | Posição Y em centímetros. |
-| width_cm | integer, not null | Largura do bounding box antes da rotação. |
-| length_cm | integer, not null | Comprimento (profundidade) do bounding box antes da rotação. |
-| rotation_deg | numeric, not null, default 0 | `[0, 360)` (BR-04). |
-| z_index | integer, not null, default 0 | Ordem de empilhamento visual. |
-| properties | jsonb, not null, default '{}' | Propriedades específicas do tipo (ex.: capacidade de um rack, orientação de picking) — extensível sem migration a cada novo campo. |
-| created_at | timestamptz, default now() | |
-| updated_at | timestamptz, default now() | |
+| id | TEXT, PK | Token de uso único (entregue por e-mail, nunca exibido na UI). |
+| user_id | TEXT, FK → users.id, ON DELETE CASCADE | |
+| created_at / expires_at | TEXT (ISO 8601) | Janela de validade do pedido de recuperação. |
+| used_at | TEXT, nullable | Marcado no uso — um token usado não pode ser reaproveitado. |
 
-Índice: `(layout_id)` para carregar todos os objetos de um layout
-rapidamente.
+Índice: `idx_reset_tokens_user_id` em `(user_id)`.
 
-### 2.5 `object_catalog` (opcional no MVP — pode iniciar como constante no código)
+### 2.4 `projects`
 
-No MVP, o catálogo de tipos de objeto (dimensões padrão, categoria,
-metadados de renderização) vive como dados estáticos no código
-(`src/features/editor/objects/catalog.ts`), não em tabela — evita
-complexidade de sincronização antes de haver necessidade real de
-customização por organização. Caso o produto evolua para permitir
-catálogos customizados por organização (pós-MVP), esta tabela é
-introduzida espelhando a mesma forma usada no código.
+Um "projeto" carrega **Layout + Fluxo juntos** no mesmo registro — o
+mesmo modelo lógico usado desde a Fase 8, em que `Layout.objects` e
+`Layout.flowNodes`/`flowConnections` pertencem à mesma entidade.
 
-## 3. Segurança de dados (Row Level Security)
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| id | TEXT, PK | |
+| user_id | TEXT, FK → users.id, ON DELETE CASCADE | Dono exclusivo — toda query é filtrada por esta coluna. |
+| name | TEXT | |
+| description | TEXT, nullable | |
+| status | TEXT, default `'active'` | Reservado para uso futuro (ex.: arquivamento). |
+| scale_px_per_meter | REAL, default 50 | Escala de referência do canvas (BR-02). |
+| grid_step_m | REAL, default 0.1 | Passo de snap à grade (BR-20). |
+| width_m / height_m | REAL, nullable | Dimensões de referência do ambiente. |
+| layout_objects | TEXT (JSON), default `'[]'` | Array de `LayoutObject` — lido/gravado por inteiro a cada save do board de Layout. |
+| flow_nodes | TEXT (JSON), default `'[]'` | Array de nós do board de Fluxo. |
+| flow_connections | TEXT (JSON), default `'[]'` | Array de conexões do board de Fluxo. |
+| version | INTEGER, default 1 | Incrementado a cada save — suporte a estados discretos de autosave (Fase 9 § F9.7). |
+| created_at / updated_at | TEXT (ISO 8601) | `updated_at` reflete o último autosave. |
 
-Regras propostas (a aplicar via políticas RLS do Postgres quando
-Supabase for integrado):
+Índice: `idx_projects_user_id` em `(user_id)`.
 
-- `organizations`: usuário só lê/escreve organizações onde possui
-  `membership`.
-- `memberships`: usuário só lê memberships da própria organização;
-  apenas `owner` pode alterar papéis.
-- `layouts`: usuário só lê/escreve layouts cuja `organization_id`
-  corresponde a uma organização da qual é membro; `viewer` tem apenas
-  leitura.
-- `layout_objects`: mesma regra de `layouts`, via join em `layout_id`.
+**Por que JSON em vez de tabelas `project_layout`/`project_flow`
+separadas:** os dois boards são sempre lidos e gravados por inteiro
+(nunca objeto a objeto — não há edição concorrente de um único objeto
+por múltiplos clientes), então uma coluna JSON evita o custo de N
+escritas a cada autosave sem perder nada em termos de modelagem —
+decisão registrada em `worker/migrations/0001_init.sql`.
 
-## 4. Persistência local (fase pré-Supabase)
+## 3. Isolamento de dados
 
-Enquanto a integração com Supabase não está ativa, o mesmo modelo é
-espelhado em IndexedDB (via uma pequena camada própria, sem biblioteca
-extra) com uma única "organização local implícita" e sem tabela de
-usuários — a interface `LayoutRepository` expõe as mesmas operações
-(`listLayouts`, `getLayout`, `createLayout`, `updateLayout`,
-`deleteLayout`, `saveLayoutObjects`) que a futura implementação Supabase
-implementará, garantindo que a troca de backend não exija mudanças no
-editor.
+Não há Row Level Security no D1 (SQLite não tem esse mecanismo) — o
+isolamento é aplicado **na própria query SQL** de cada função em
+`worker/src/db.ts`: toda leitura/escrita de `projects` inclui
+`WHERE user_id = ?` com o ID do usuário da sessão atual (nunca um valor
+vindo do cliente). Uma tentativa de acessar o projeto de outro usuário
+por ID retorna 404 — validado por teste automatizado cruzando dois
+usuários (`worker/test/projects.test.ts`).
+
+## 4. Migrations
+
+Versionadas em `worker/migrations/`, aplicadas via
+`wrangler d1 migrations apply` (local ou remoto — ver `DEPLOYMENT.md`).
+Os testes do Worker aplicam as mesmas migrations contra um D1 local
+(Miniflare) antes de cada suíte, garantindo que o esquema testado seja
+sempre o mesmo que roda em produção.
